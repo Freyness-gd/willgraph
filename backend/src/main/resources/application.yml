@@ -8,3 +8,6 @@ spring:
     authentication:
       username: neo4j
       password: test
+  output:
+    ansi:
+      enabled: always
