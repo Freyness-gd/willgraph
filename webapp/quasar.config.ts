@@ -14,18 +14,13 @@ export default defineConfig((/* ctx */) => {
 		boot: ["axios", "leaflet"],
 
 		// https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-		css: [
-			"app.css",
-			"tailwind.css",
-			"leaflet/dist/leaflet.css",
-			"leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css",
-		],
+		css: ["app.css", "tailwind.css"],
 
 		// https://github.com/quasarframework/quasar/tree/dev/extras
 		extras: [
 			// 'ionicons-v4',
 			// 'mdi-v7',
-			// 'fontawesome-v6',
+			"fontawesome-v6",
 			// 'eva-icons',
 			// 'themify',
 			// 'line-awesome',
@@ -49,11 +44,9 @@ export default defineConfig((/* ctx */) => {
 			},
 
 			vueRouterMode: "hash", // available values: 'hash', 'history'
-			// vueRouterBase,
-			// vueDevtools,
-			// vueOptionsAPI: false,
+			vueOptionsAPI: false,
 
-			// rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
+			rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
 			// publicPath: '/',
 			// analyze: true,
@@ -92,8 +85,8 @@ export default defineConfig((/* ctx */) => {
 		framework: {
 			config: {},
 
-			// iconSet: 'material-icons', // Quasar icon set
-			// lang: 'en-US', // Quasar language pack
+			iconSet: "material-icons", // Quasar icon set
+			lang: "en-US", // Quasar language pack
 
 			// For special cases outside of where the auto-import strategy can have an impact
 			// (like functional components as one of the examples),
