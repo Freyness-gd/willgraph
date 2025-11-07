@@ -1,8 +1,8 @@
 plugins {
-	id 'java'
+    id 'java'
     id 'checkstyle'
-	id 'org.springframework.boot' version '3.5.7'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'at.ac.tuwien.mogda'
@@ -10,32 +10,35 @@ version = '0.0.1-SNAPSHOT'
 description = 'backend'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(25)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
 
     // region SPRING
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.boot:spring-boot-starter-data-neo4j'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-neo4j'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-json'
     implementation 'io.springfox:springfox-boot-starter:3.0.0'
+    // Geo/spatial support
+    implementation 'org.locationtech.jts:jts-core:1.20.0'
+    implementation 'org.n52.jackson:jackson-datatype-jts:1.2.10'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
@@ -48,7 +51,7 @@ dependencies {
     // endregion
     // region LOMBOK
     compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
     // endregion
     // region JUNIT
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -58,7 +61,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic'
     //endregion
 
-	testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'io.projectreactor:reactor-test'
 
     configurations.configureEach {
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
@@ -87,5 +90,5 @@ tasks.named('checkstyleTest', Checkstyle) {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
