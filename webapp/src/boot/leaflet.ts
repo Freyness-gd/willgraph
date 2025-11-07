@@ -1,0 +1,1 @@
+import "leaflet-defaulticon-compatibility";

@@ -1,86 +1,106 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import pluginVue from 'eslint-plugin-vue'
-import pluginQuasar from '@quasar/app-vite/eslint'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
-import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import js from '@eslint/js';
+import globals from 'globals';
+import pluginVue from 'eslint-plugin-vue';
+import pluginQuasar from '@quasar/app-vite/eslint';
+import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript';
+import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting';
 
 export default defineConfigWithVueTs(
-  {
-    /**
-     * Ignore the following files.
-     * Please note that pluginQuasar.configs.recommended() already ignores
-     * the "node_modules" folder for you (and all other Quasar project
-     * relevant folders and files).
-     *
-     * ESLint requires "ignores" key to be the only one in this object
-     */
-    // ignores: []
-  },
+	{
+		// You may add any `ignores` here if needed
+		// ignores: []
+	},
 
-  pluginQuasar.configs.recommended(),
-  js.configs.recommended,
+	pluginQuasar.configs.recommended(),
+	js.configs.recommended,
 
-  /**
-   * https://eslint.vuejs.org
-   *
-   * pluginVue.configs.base
-   *   -> Settings and rules to enable correct ESLint parsing.
-   * pluginVue.configs[ 'flat/essential']
-   *   -> base, plus rules to prevent errors or unintended behavior.
-   * pluginVue.configs["flat/strongly-recommended"]
-   *   -> Above, plus rules to considerably improve code readability and/or dev experience.
-   * pluginVue.configs["flat/recommended"]
-   *   -> Above, plus rules to enforce subjective community defaults to ensure consistency.
-   */
-  pluginVue.configs[ 'flat/essential' ],
+	pluginVue.configs['flat/essential'],
 
-  {
-    files: ['**/*.ts', '**/*.vue'],
-    rules: {
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports' }
-      ],
-    }
-  },
-  // https://github.com/vuejs/eslint-config-typescript
-  vueTsConfigs.recommendedTypeChecked,
+	{
+		files: ['**/*.ts', '**/*.vue'],
+		rules: {
+			'@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+		},
+	},
 
-  {
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
+	vueTsConfigs.recommendedTypeChecked,
 
-      globals: {
-        ...globals.browser,
-        ...globals.node, // SSR, Electron, config files
-        process: 'readonly', // process.env.*
-        ga: 'readonly', // Google Analytics
-        cordova: 'readonly',
-        Capacitor: 'readonly',
-        chrome: 'readonly', // BEX related
-        browser: 'readonly' // BEX related
-      }
-    },
+	{
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: {
+				...globals.browser,
+				...globals.node,
+				process: 'readonly',
+				ga: 'readonly',
+				cordova: 'readonly',
+				Capacitor: 'readonly',
+				chrome: 'readonly',
+				browser: 'readonly',
+			},
+		},
+		rules: {
+			// Disable formatting‐rules overlapping with Prettier
+			'indent': 'off',         // Prettier handles indentation
+			'quotes': 'off',         // Prettier handles quotes
+			'comma-dangle': 'off',   // Prettier handles trailing commas
+			'max-len': 'off',        // Prettier handles line length roughly
 
-    // add your custom rules here
-    rules: {
-      'prefer-promise-reject-errors': 'off',
+			// Best practices
+			'eqeqeq': ['error', 'always', { null: 'ignore' }],
+			'no-var': 'error',
+			'prefer-const': ['error', { destructuring: 'all' }],
+			'curly': ['error', 'all'],
+			'no-duplicate-imports': 'error',
+			'no-implicit-coercion': ['error', {
+				boolean: true,
+				number: true,
+				string: true,
+				allow: []
+			}],
+			'object-shorthand': ['error', 'always'],
+			'no-empty-function': ['error', {
+				allow: ['arrowFunctions', 'functions', 'methods']
+			}],
+			'no-eval': 'error',
+			'prefer-rest-params': 'error',
+			'no-return-await': 'error',
+			'no-unneeded-ternary': 'error',
+			'no-useless-return': 'error',
+			'no-throw-literal': 'error',
+			'consistent-return': 'error',
+			'no-shadow': 'error',
+			'no-alert': 'warn',
+			'guard-for-in': 'error',
+			'no-prototype-builtins': 'error',
+			'no-param-reassign': ['error', {
+				props: true,
+				ignorePropertyModificationsFor: ['state']
+			}],
+			'yoda': ['error', 'never'],
+			'prefer-exponentiation-operator': 'error',
+			'no-constant-condition': ['error', { checkLoops: false }],
 
-      // allow debugger during development only
-      'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
-    }
-  },
+			'@typescript-eslint/no-unused-vars': ['warn', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_'
+			}],
 
-  {
-    files: [ 'src-pwa/custom-service-worker.ts' ],
-    languageOptions: {
-      globals: {
-        ...globals.serviceworker
-      }
-    }
-  },
+			'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
+			'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+		},
+	},
 
-  prettierSkipFormatting
-)
+	{
+		files: ['src-pwa/custom-service-worker.ts'],
+		languageOptions: {
+			globals: {
+				...globals.serviceworker,
+			}
+		},
+	},
+
+	// Integrate Prettier skipping formatting rules (so ESLint and Prettier play nicely)
+	prettierSkipFormatting,
+);
