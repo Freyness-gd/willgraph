@@ -1,0 +1,25 @@
+name: Security Scan Workflow
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '59 1 * * 6'
+
+jobs:
+  codeql-scanner:
+    name: CodeQL Code Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: java, javascript, python # adjust languages to your project
+
+      - name: Perform CodeQL Scan
+        uses: github/codeql-action/analyze@v2
