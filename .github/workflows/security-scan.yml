@@ -14,12 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: java, javascript, python # adjust languages to your project
+          languages: java, javascript
 
       - name: Perform CodeQL Scan
         uses: github/codeql-action/analyze@v2
