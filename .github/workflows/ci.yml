@@ -1,40 +1,32 @@
-name: Gradle CI
+name: Gradle build
 
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      # Step 2: Set up JDK 25
-      - name: Set up JDK 25
+      - uses: actions/checkout@v5
+      - name: Set up JDK 11
         uses: actions/setup-java@v5
         with:
-          distribution: 'temurin'
-          java-version: '25'
-          architecture: x64
+          java-version: '11'
+          distribution: 'adopt'
 
-      # Step 3: Cache Gradle dependencies
       - name: Cache Gradle packages
-        working-directory: backend
         uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
-            ~/.gradle/wrapper/
-          key: ${{ runner.os }}-gradle-${{ hashFiles('backend/**/*.gradle*', 'backend/gradle/wrapper/gradle-wrapper.properties') }}
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-
-      # Step 5: Run tests using Gradle wrapper
-      - name: Run Gradle tests
-        working-directory: backend
-        run: ./gradlew test
+      - name: Build with Gradle
+        run: ./gradlew build
