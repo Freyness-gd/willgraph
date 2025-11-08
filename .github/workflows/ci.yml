@@ -1,4 +1,4 @@
-me: Gradle CI
+name: Gradle CI
 
 on:
   pull_request:
