@@ -19,6 +19,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '25'
+          architecture: x64
 
       # Step 3: Cache Gradle dependencies
       - name: Cache Gradle packages
@@ -32,10 +33,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Step 4: Ensure Gradle wrapper is executable (important!)
-      - name: Make Gradle wrapper executable
-        working-directory: backend
-        run: chmod +x ./gradlew
 
       # Step 5: Run tests using Gradle wrapper
       - name: Run Gradle tests
