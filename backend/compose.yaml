@@ -6,7 +6,7 @@ services:
       - "7687:7687"   # Bolt port
       - "7474:7474"   # HTTP web UI
     environment:
-      NEO4J_AUTH: neo4j/test  # username/password
+      NEO4J_AUTH: neo4j/testpassword  # username/password
       NEO4J_dbms_default__database: neo4j
     volumes:
       - neo4j_data:/data
