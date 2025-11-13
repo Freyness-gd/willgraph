@@ -7,7 +7,7 @@ spring:
     uri: bolt://localhost:7687
     authentication:
       username: neo4j
-      password: test
+      password: testpassword
   output:
     ansi:
       enabled: always
