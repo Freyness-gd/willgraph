@@ -43,6 +43,56 @@ backend/gradle/wrapper/gradle-wrapper.jar
 # *.iml
 # *.ipr
 
+
+### Python (Scrapy + venv)
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Python cache / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Scrapy-specific
+.scrapy/
+*.log
+
+# Test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# IDE/editor Python helpers
+.python-version
+
+# Environment variables
+.env
+.env.*
+
+# Jupyter (if used)
+.ipynb_checkpoints/
+
+# MyPy / type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+
 # CMake
 cmake-build-*/
 
