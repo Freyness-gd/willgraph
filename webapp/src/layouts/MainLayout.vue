@@ -1,102 +1,118 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+	<q-layout view="lHh Lpr lFf">
+		<q-header elevated>
+			<q-toolbar>
+				<!--				<q-btn aria-label="Menu" dense flat icon="menu" round @click="toggleLeftDrawer" />-->
 
-        <q-toolbar-title>
-          Quasar App
-        </q-toolbar-title>
+				<q-toolbar-title> WillGraph </q-toolbar-title>
+				<q-input
+					v-model="search"
+					:loading="searchLoadingState"
+					class="p-2"
+					clearable
+					debounce="500"
+					placeholder="Search"
+					rounded
+					standout
+					type="search"
+					@focus="searchFocus = true"
+				>
+					<template v-slot:append>
+						<q-icon v-if="searchIconVisibility" name="search" />
+					</template>
 
-        <div>Quasar v{{ $q.version }}</div>
-      </q-toolbar>
-    </q-header>
+					<q-menu v-model="searchMenuOpen" anchor="bottom left" fit self="top left">
+						<q-list dense style="min-width: 250px">
+							<q-item
+								v-for="name in searchResults"
+								:key="name"
+								clickable
+								@click="
+									geoStore.addSelectedMunicipality(name);
+									clearSearch();
+								"
+							>
+								<q-item-section>
+									{{ name }}
+								</q-item-section>
+							</q-item>
+						</q-list>
+					</q-menu>
+				</q-input>
+			</q-toolbar>
+		</q-header>
 
-    <q-drawer
-      v-model="leftDrawerOpen"
-      show-if-above
-      bordered
-    >
-      <q-list>
-        <q-item-label
-          header
-        >
-          Essential Links
-        </q-item-label>
+		<!--		<q-drawer v-types="leftDrawerOpen" bordered show-if-above>-->
+		<!--			<q-list>-->
+		<!--				<q-item-label header> Essential Links </q-item-label>-->
 
-        <EssentialLink
-          v-for="link in linksList"
-          :key="link.title"
-          v-bind="link"
-        />
-      </q-list>
-    </q-drawer>
+		<!--				<EssentialLink v-for="link in linksList" :key="link.title" v-bind="link" />-->
+		<!--			</q-list>-->
+		<!--		</q-drawer>-->
 
-    <q-page-container>
-      <router-view />
-    </q-page-container>
-  </q-layout>
+		<q-page-container>
+			<router-view />
+		</q-page-container>
+	</q-layout>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
-import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
+<script lang="ts" setup>
+import { computed, ref, watch } from "vue";
+import { type EssentialLinkProps } from "components/EssentialLink.vue";
+import { useGeoStore } from "stores/geoStore";
 
-const linksList: EssentialLinkProps[] = [
-  {
-    title: 'Docs',
-    caption: 'quasar.dev',
-    icon: 'school',
-    link: 'https://quasar.dev'
-  },
-  {
-    title: 'Github',
-    caption: 'github.com/quasarframework',
-    icon: 'code',
-    link: 'https://github.com/quasarframework'
-  },
-  {
-    title: 'Discord Chat Channel',
-    caption: 'chat.quasar.dev',
-    icon: 'chat',
-    link: 'https://chat.quasar.dev'
-  },
-  {
-    title: 'Forum',
-    caption: 'forum.quasar.dev',
-    icon: 'record_voice_over',
-    link: 'https://forum.quasar.dev'
-  },
-  {
-    title: 'Twitter',
-    caption: '@quasarframework',
-    icon: 'rss_feed',
-    link: 'https://twitter.quasar.dev'
-  },
-  {
-    title: 'Facebook',
-    caption: '@QuasarFramework',
-    icon: 'public',
-    link: 'https://facebook.quasar.dev'
-  },
-  {
-    title: 'Quasar Awesome',
-    caption: 'Community Quasar projects',
-    icon: 'favorite',
-    link: 'https://awesome.quasar.dev'
-  }
-];
+// Pinia GeoStore
+const geoStore = useGeoStore();
 
+// Reactive State
+const search = ref("");
+const searchFocus = ref(false);
+const searchLoadingState = ref(false);
+const searchMenuOpen = ref(false);
 const leftDrawerOpen = ref(false);
 
-function toggleLeftDrawer () {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
-}
+// Variables
+const linksList: EssentialLinkProps[] = [
+	{
+		title: "Docs",
+		caption: "quasar.dev",
+		icon: "school",
+		link: "https://quasar.dev",
+	},
+];
+
+// Functionality
+const toggleLeftDrawer = () => {
+	leftDrawerOpen.value = !leftDrawerOpen.value;
+};
+
+const clearSearch = () => {
+	search.value = "";
+	searchFocus.value = false;
+};
+
+// Computed State
+const searchIconVisibility = computed(() => {
+	return !search.value || search.value.length === 0 || !searchFocus.value;
+});
+
+const searchResults = computed(() => {
+	if (!search.value || search.value.length === 0) {
+		return [];
+	}
+
+	const query = search.value.toLowerCase();
+
+	console.log("Searching for: ", query);
+
+	const results = geoStore.municipalitiesNames.filter((name) => name.toLowerCase().includes(query));
+
+	return results.slice(0, 5);
+});
+
+// Watcher
+watch(search, (value) => {
+	if (!value) return;
+	searchMenuOpen.value = value.length > 0 && searchResults.value.length > 0;
+});
 </script>
