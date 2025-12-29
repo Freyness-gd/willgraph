@@ -2,7 +2,7 @@ import time
 
 import scrapy
 import datetime
-from scrapy_files.items import WillhabenItem
+from willhaben.items import WillhabenItem
 
 class WillhabenSpider(scrapy.Spider):
     name = "willhaben"
@@ -14,6 +14,9 @@ class WillhabenSpider(scrapy.Spider):
                 'encoding': 'utf8',
                 'overwrite': True,
             },
+        },
+        "ITEM_PIPELINES": {
+            "willhaben.pipelines.WillhabenPipeline": 300,
         }
     }
 
