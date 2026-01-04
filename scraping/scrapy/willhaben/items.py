@@ -54,6 +54,8 @@ class ImmoscoutItem:
     title: str
     location: str
 
+    raw_ul: Optional[bool] = None
+
     # raw scraped strings
     raw_size: Optional[str] = None  # e.g. "32 m²"
     raw_rooms: Optional[float] = None  # e.g. "1"

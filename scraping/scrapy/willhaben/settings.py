@@ -17,6 +17,7 @@ NEWSPIDER_MODULE = "willhaben.spiders"
 
 ADDONS = {}
 
+LOG_LEVEL = "INFO"
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "willhaben (+http://www.yourdomain.com)"
@@ -124,4 +125,4 @@ DOWNLOADER_MIDDLEWARES = {
 FEED_EXPORT_ENCODING = "utf-8"
 
 # Maximum number of requests (scrapes) to perform. 0 = unlimited
-SCRAPE_MAX = 4
+SCRAPE_MAX = 5
