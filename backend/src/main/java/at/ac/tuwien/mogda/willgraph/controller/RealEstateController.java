@@ -1,6 +1,7 @@
 package at.ac.tuwien.mogda.willgraph.controller;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
+import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import at.ac.tuwien.mogda.willgraph.service.RealEstateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,10 +32,15 @@ public class RealEstateController {
 
 
     @GetMapping()
-    public ResponseEntity<List<RealEstateDto>> findInsideRegion(@RequestParam(required = false) String regionName, @RequestParam(required = false) String iso) {
-        if (regionName == null && iso == null) {
+    public ResponseEntity<List<RealEstateDto>> findInsideRegion(@RequestParam(required = false) String region, @RequestParam(required = false) String iso) {
+        if (region == null && iso == null) {
             return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findAll());
         }
-        return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findRealEstatesInRegion(regionName, iso));
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findRealEstatesInRegion(region, iso));
+        } catch (NotFoundException _) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
     }
 }

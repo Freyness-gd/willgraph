@@ -5,6 +5,7 @@ import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
 import at.ac.tuwien.mogda.willgraph.entity.AddressEntity;
 import at.ac.tuwien.mogda.willgraph.entity.ListingEntity;
 import at.ac.tuwien.mogda.willgraph.entity.RegionEntity;
+import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import at.ac.tuwien.mogda.willgraph.repository.ListingRepository;
 import at.ac.tuwien.mogda.willgraph.repository.RegionRepository;
 import at.ac.tuwien.mogda.willgraph.service.RealEstateService;
@@ -16,7 +17,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,9 +31,9 @@ public class RealEstateServiceImpl implements RealEstateService {
         this.regionRepository = regionRepository;
     }
 
-    public List<RealEstateDto> findRealEstatesInRegion(String regionName, String iso) {
+    public List<RealEstateDto> findRealEstatesInRegion(String regionName, String iso) throws NotFoundException {
         RegionEntity region = this.regionRepository.findByName(regionName).orElseThrow(
-                () -> new IllegalArgumentException("Region " + regionName + " not found")
+                () -> new NotFoundException("Region " + regionName + " not found")
         );
 
         Geometry regionPolygon = region.getGeometry();
@@ -64,7 +64,7 @@ public class RealEstateServiceImpl implements RealEstateService {
         return this.listingRepository.findAll(PageRequest.of(0, 10)).getContent()
                 .stream()
                 .map(this::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
