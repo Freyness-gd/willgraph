@@ -46,6 +46,17 @@ public class RegionImporter implements CommandLineRunner {
                 }
             }
         }
+        //TODO: make it generally working for any region json -> aka directory
+        try (InputStream inputStream = new ClassPathResource("gemeinden_999_geo.json").getInputStream()) {
+            JsonNode root = objectMapper.readTree(inputStream);
+            JsonNode features = root.get("features");
+
+            if (features.isArray()) {
+                for (JsonNode feature : features) {
+                    processFeature(feature);
+                }
+            }
+        }
         log.info("Region import completed.");
     }
 
