@@ -62,6 +62,12 @@ dependencies {
 
     testImplementation 'io.projectreactor:reactor-test'
 
+    //java topology (jts)
+    implementation("org.locationtech.jts:jts-core:1.20.0")
+
+    //csv stuff
+    implementation("org.apache.commons:commons-csv:1.14.1")
+
     configurations.configureEach {
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-core'

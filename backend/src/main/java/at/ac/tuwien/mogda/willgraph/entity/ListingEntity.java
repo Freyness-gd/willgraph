@@ -1,0 +1,41 @@
+package at.ac.tuwien.mogda.willgraph.entity;
+
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.neo4j.core.schema.*;
+
+import java.time.LocalDateTime;
+
+import static org.springframework.data.neo4j.core.schema.Relationship.Direction.OUTGOING;
+
+//TODO: Listing or Real Estate?
+@Node("Listing")
+@Data
+@Builder
+public class ListingEntity {
+    @Id
+    @GeneratedValue
+    private Long id;
+
+    @Property("url")
+    private String externalUrl;
+    private String title;
+
+    private Double price;
+    private Double pricePerM2;
+
+    private Double livingArea;
+    private Double totalArea;
+
+    private Integer roomCount;
+    private Integer bedroomCount;
+    private Integer bathroomCount;
+
+    private String source;
+    private LocalDateTime timestampFound;
+    //Removed timestamp is not really extractable
+
+    @Relationship(type = "LOCATED_AT", direction = OUTGOING)
+    private AddressEntity address;
+    //TODO: Maybe add relationship to real estate type + rooms?
+}

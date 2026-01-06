@@ -5,6 +5,6 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 
 import java.util.List;
 
-public interface PoIRepository extends Neo4jRepository<PointOfInterestEntity, String> {
+public interface PoIRepository extends Neo4jRepository<PointOfInterestEntity, Long> {
     List<PointOfInterestEntity> findAllByType(String type);
 }
