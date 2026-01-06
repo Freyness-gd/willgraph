@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.n52.jackson:jackson-datatype-jts:1.2.10'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    //developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     // endregion
