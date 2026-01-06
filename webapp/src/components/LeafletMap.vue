@@ -66,7 +66,7 @@ const drawMunicipalities = (munis: Municipality[]) => {
 	const map = mapRef.value;
 
 	// Clear previous points
-	clearPoints();
+	// clearPoints();
 
 	// Create a feature group to hold drawn shapes (FeatureGroup has getBounds)
 	drawnLayerRef = L.featureGroup();
@@ -181,7 +181,7 @@ const drawHeatPoints = (points: [number, number][]) => {
 	const map = mapRef.value;
 
 	// Clear previous overlays (both heat and drawn shapes)
-	clearPoints();
+	// clearPoints();
 
 	// Convert [lat, lon] pairs to heat layer format [lat, lon, intensity]
 	const heatData = points.map((p) => [p[0], p[1], 0.8] as [number, number, number]);
