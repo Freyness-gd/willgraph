@@ -14,12 +14,15 @@ const zoomRef = ref<number>(12);
 
 const geoJson = computed(() => municipalitiesToGeoJson(geoStore.getSelectedMunicipalities));
 
-const heatPoints: [number, number, number][] = [
-	[48.2085, 16.373, 1], // 1st district – Innere Stadt
-	[48.22, 16.392, 0.8], // 2nd district – Leopoldstadt
-	[48.177, 16.3, 0.6], // 12th district – Meidling
-	[48.138, 16.284, 0.4], // 23rd district – Liesing
-];
+// Convert heatPoints from store to Leaflet format [lat, lng, intensity]
+const heatPoints = computed(() => {
+	const points = geoStore.heatPoints;
+	const mappedPoints = points.map(
+		(point) => [point.latitude, point.longitude, point.intensity] as [number, number, number]
+	);
+	console.log("Mapped points: ", mappedPoints);
+	return mappedPoints;
+});
 
 const calculateRadiusFromZoom = (zoom: number): number => {
 	// 1 km at the equator is approximately 40075 km / 2^(zoom + 8) pixels
@@ -30,7 +33,7 @@ const calculateRadiusFromZoom = (zoom: number): number => {
 	// For 1 km, we get: radius ≈ 40075 / Math.pow(2, zoom + 8) in world units
 	// Converting to pixels for heatLayer
 	const metersPerPixel = 40075016.686 / 2 ** (zoom + 8);
-	const radiusInPixels = Math.round(100 / metersPerPixel); // 1000 meters = 1 km
+	const radiusInPixels = Math.round(200 / metersPerPixel); // 1000 meters = 1 km
 	return Math.max(radiusInPixels, 10); // minimum radius of 10 pixels
 };
 
@@ -61,7 +64,7 @@ const onMapReady = (map: LeafletMap) => {
 			heatLayerRef = null;
 		}
 		const radius = calculateRadiusFromZoom(map.getZoom());
-		const heat = (L as any).heatLayer(heatPoints, {
+		const heat = (L as any).heatLayer(heatPoints.value, {
 			radius,
 			gradient: { 0.4: "blue", 0.55: "yellow", 1: "red" },
 			minOpacity: 0.8,

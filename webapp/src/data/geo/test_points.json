@@ -1,0 +1,1213 @@
+[
+	{
+		"name": "Innere Stadt",
+		"iso": "001",
+		"latitude": 48.2085,
+		"longitude": 16.373,
+		"intensity": 1
+	},
+	{
+		"name": "Leopoldstadt",
+		"iso": "002",
+		"latitude": 48.22,
+		"longitude": 16.392,
+		"intensity": 0.8
+	},
+	{
+		"name": "Meidling",
+		"iso": "012",
+		"latitude": 48.177,
+		"longitude": 16.3,
+		"intensity": 0.6
+	},
+	{
+		"name": "Liesing",
+		"iso": "023",
+		"latitude": 48.138,
+		"longitude": 16.284,
+		"intensity": 0.4
+	},
+	{
+		"name": "Point 5",
+		"iso": "024",
+		"latitude": 48.245,
+		"longitude": 16.445,
+		"intensity": 0.65
+	},
+	{
+		"name": "Point 6",
+		"iso": "025",
+		"latitude": 48.165,
+		"longitude": 16.35,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 7",
+		"iso": "026",
+		"latitude": 48.22,
+		"longitude": 16.28,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 8",
+		"iso": "027",
+		"latitude": 48.195,
+		"longitude": 16.42,
+		"intensity": 0.81
+	},
+	{
+		"name": "Point 9",
+		"iso": "028",
+		"latitude": 48.15,
+		"longitude": 16.35,
+		"intensity": 0.55
+	},
+	{
+		"name": "Point 10",
+		"iso": "029",
+		"latitude": 48.275,
+		"longitude": 16.38,
+		"intensity": 0.68
+	},
+	{
+		"name": "Point 11",
+		"iso": "030",
+		"latitude": 48.128,
+		"longitude": 16.41,
+		"intensity": 0.52
+	},
+	{
+		"name": "Point 12",
+		"iso": "031",
+		"latitude": 48.238,
+		"longitude": 16.32,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 13",
+		"iso": "032",
+		"latitude": 48.185,
+		"longitude": 16.485,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 14",
+		"iso": "033",
+		"latitude": 48.21,
+		"longitude": 16.355,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 15",
+		"iso": "034",
+		"latitude": 48.156,
+		"longitude": 16.42,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 16",
+		"iso": "035",
+		"latitude": 48.268,
+		"longitude": 16.295,
+		"intensity": 0.67
+	},
+	{
+		"name": "Point 17",
+		"iso": "036",
+		"latitude": 48.142,
+		"longitude": 16.365,
+		"intensity": 0.54
+	},
+	{
+		"name": "Point 18",
+		"iso": "037",
+		"latitude": 48.225,
+		"longitude": 16.465,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 19",
+		"iso": "038",
+		"latitude": 48.188,
+		"longitude": 16.245,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 20",
+		"iso": "039",
+		"latitude": 48.252,
+		"longitude": 16.375,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 21",
+		"iso": "040",
+		"latitude": 48.132,
+		"longitude": 16.505,
+		"intensity": 0.51
+	},
+	{
+		"name": "Point 22",
+		"iso": "041",
+		"latitude": 48.205,
+		"longitude": 16.315,
+		"intensity": 0.79
+	},
+	{
+		"name": "Point 23",
+		"iso": "042",
+		"latitude": 48.172,
+		"longitude": 16.455,
+		"intensity": 0.66
+	},
+	{
+		"name": "Point 24",
+		"iso": "043",
+		"latitude": 48.215,
+		"longitude": 16.365,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 25",
+		"iso": "044",
+		"latitude": 48.195,
+		"longitude": 16.505,
+		"intensity": 0.69
+	},
+	{
+		"name": "Point 26",
+		"iso": "045",
+		"latitude": 48.248,
+		"longitude": 16.425,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 27",
+		"iso": "046",
+		"latitude": 48.138,
+		"longitude": 16.325,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 28",
+		"iso": "047",
+		"latitude": 48.258,
+		"longitude": 16.265,
+		"intensity": 0.53
+	},
+	{
+		"name": "Point 29",
+		"iso": "048",
+		"latitude": 48.168,
+		"longitude": 16.385,
+		"intensity": 0.82
+	},
+	{
+		"name": "Point 30",
+		"iso": "049",
+		"latitude": 48.225,
+		"longitude": 16.515,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 31",
+		"iso": "050",
+		"latitude": 48.145,
+		"longitude": 16.275,
+		"intensity": 0.68
+	},
+	{
+		"name": "Point 32",
+		"iso": "051",
+		"latitude": 48.285,
+		"longitude": 16.345,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 33",
+		"iso": "052",
+		"latitude": 48.155,
+		"longitude": 16.495,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 34",
+		"iso": "053",
+		"latitude": 48.235,
+		"longitude": 16.235,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 35",
+		"iso": "054",
+		"latitude": 48.125,
+		"longitude": 16.445,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 36",
+		"iso": "055",
+		"latitude": 48.275,
+		"longitude": 16.415,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 37",
+		"iso": "056",
+		"latitude": 48.185,
+		"longitude": 16.265,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 38",
+		"iso": "057",
+		"latitude": 48.215,
+		"longitude": 16.445,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 39",
+		"iso": "058",
+		"latitude": 48.165,
+		"longitude": 16.315,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 40",
+		"iso": "059",
+		"latitude": 48.245,
+		"longitude": 16.355,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 41",
+		"iso": "060",
+		"latitude": 48.135,
+		"longitude": 16.385,
+		"intensity": 0.55
+	},
+	{
+		"name": "Point 42",
+		"iso": "061",
+		"latitude": 48.205,
+		"longitude": 16.545,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 43",
+		"iso": "062",
+		"latitude": 48.265,
+		"longitude": 16.285,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 44",
+		"iso": "063",
+		"latitude": 48.175,
+		"longitude": 16.435,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 45",
+		"iso": "064",
+		"latitude": 48.225,
+		"longitude": 16.305,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 46",
+		"iso": "065",
+		"latitude": 48.145,
+		"longitude": 16.515,
+		"intensity": 0.68
+	},
+	{
+		"name": "Point 47",
+		"iso": "066",
+		"latitude": 48.275,
+		"longitude": 16.375,
+		"intensity": 0.79
+	},
+	{
+		"name": "Point 48",
+		"iso": "067",
+		"latitude": 48.155,
+		"longitude": 16.255,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 49",
+		"iso": "068",
+		"latitude": 48.235,
+		"longitude": 16.475,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 50",
+		"iso": "069",
+		"latitude": 48.125,
+		"longitude": 16.365,
+		"intensity": 0.54
+	},
+	{
+		"name": "Point 51",
+		"iso": "070",
+		"latitude": 48.215,
+		"longitude": 16.265,
+		"intensity": 0.69
+	},
+	{
+		"name": "Point 52",
+		"iso": "071",
+		"latitude": 48.265,
+		"longitude": 16.445,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 53",
+		"iso": "072",
+		"latitude": 48.185,
+		"longitude": 16.335,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 54",
+		"iso": "073",
+		"latitude": 48.245,
+		"longitude": 16.515,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 55",
+		"iso": "074",
+		"latitude": 48.135,
+		"longitude": 16.295,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 56",
+		"iso": "075",
+		"latitude": 48.225,
+		"longitude": 16.385,
+		"intensity": 0.81
+	},
+	{
+		"name": "Point 57",
+		"iso": "076",
+		"latitude": 48.175,
+		"longitude": 16.555,
+		"intensity": 0.65
+	},
+	{
+		"name": "Point 58",
+		"iso": "077",
+		"latitude": 48.285,
+		"longitude": 16.305,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 59",
+		"iso": "078",
+		"latitude": 48.145,
+		"longitude": 16.425,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 60",
+		"iso": "079",
+		"latitude": 48.255,
+		"longitude": 16.235,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 61",
+		"iso": "080",
+		"latitude": 48.165,
+		"longitude": 16.475,
+		"intensity": 0.56
+	},
+	{
+		"name": "Point 62",
+		"iso": "081",
+		"latitude": 48.215,
+		"longitude": 16.325,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 63",
+		"iso": "082",
+		"latitude": 48.195,
+		"longitude": 16.555,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 64",
+		"iso": "083",
+		"latitude": 48.265,
+		"longitude": 16.365,
+		"intensity": 0.78
+	},
+	{
+		"name": "Point 65",
+		"iso": "084",
+		"latitude": 48.135,
+		"longitude": 16.245,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 66",
+		"iso": "085",
+		"latitude": 48.245,
+		"longitude": 16.405,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 67",
+		"iso": "086",
+		"latitude": 48.175,
+		"longitude": 16.295,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 68",
+		"iso": "087",
+		"latitude": 48.225,
+		"longitude": 16.535,
+		"intensity": 0.69
+	},
+	{
+		"name": "Point 69",
+		"iso": "088",
+		"latitude": 48.155,
+		"longitude": 16.375,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 70",
+		"iso": "089",
+		"latitude": 48.285,
+		"longitude": 16.425,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 71",
+		"iso": "090",
+		"latitude": 48.125,
+		"longitude": 16.515,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 72",
+		"iso": "091",
+		"latitude": 48.235,
+		"longitude": 16.265,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 73",
+		"iso": "092",
+		"latitude": 48.205,
+		"longitude": 16.455,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 74",
+		"iso": "093",
+		"latitude": 48.185,
+		"longitude": 16.245,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 75",
+		"iso": "094",
+		"latitude": 48.255,
+		"longitude": 16.345,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 76",
+		"iso": "095",
+		"latitude": 48.145,
+		"longitude": 16.465,
+		"intensity": 0.67
+	},
+	{
+		"name": "Point 77",
+		"iso": "096",
+		"latitude": 48.225,
+		"longitude": 16.245,
+		"intensity": 0.79
+	},
+	{
+		"name": "Point 78",
+		"iso": "097",
+		"latitude": 48.175,
+		"longitude": 16.525,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 79",
+		"iso": "098",
+		"latitude": 48.275,
+		"longitude": 16.285,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 80",
+		"iso": "099",
+		"latitude": 48.135,
+		"longitude": 16.405,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 81",
+		"iso": "100",
+		"latitude": 48.245,
+		"longitude": 16.335,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 82",
+		"iso": "101",
+		"latitude": 48.165,
+		"longitude": 16.545,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 83",
+		"iso": "102",
+		"latitude": 48.215,
+		"longitude": 16.405,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 84",
+		"iso": "103",
+		"latitude": 48.195,
+		"longitude": 16.275,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 85",
+		"iso": "104",
+		"latitude": 48.265,
+		"longitude": 16.495,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 86",
+		"iso": "105",
+		"latitude": 48.125,
+		"longitude": 16.325,
+		"intensity": 0.56
+	},
+	{
+		"name": "Point 87",
+		"iso": "106",
+		"latitude": 48.235,
+		"longitude": 16.435,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 88",
+		"iso": "107",
+		"latitude": 48.155,
+		"longitude": 16.215,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 89",
+		"iso": "108",
+		"latitude": 48.225,
+		"longitude": 16.555,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 90",
+		"iso": "109",
+		"latitude": 48.185,
+		"longitude": 16.365,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 91",
+		"iso": "110",
+		"latitude": 48.275,
+		"longitude": 16.225,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 92",
+		"iso": "111",
+		"latitude": 48.145,
+		"longitude": 16.395,
+		"intensity": 0.68
+	},
+	{
+		"name": "Point 93",
+		"iso": "112",
+		"latitude": 48.255,
+		"longitude": 16.475,
+		"intensity": 0.78
+	},
+	{
+		"name": "Point 94",
+		"iso": "113",
+		"latitude": 48.165,
+		"longitude": 16.265,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 95",
+		"iso": "114",
+		"latitude": 48.215,
+		"longitude": 16.535,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 96",
+		"iso": "115",
+		"latitude": 48.135,
+		"longitude": 16.455,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 97",
+		"iso": "116",
+		"latitude": 48.245,
+		"longitude": 16.265,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 98",
+		"iso": "117",
+		"latitude": 48.175,
+		"longitude": 16.415,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 99",
+		"iso": "118",
+		"latitude": 48.225,
+		"longitude": 16.345,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 100",
+		"iso": "119",
+		"latitude": 48.195,
+		"longitude": 16.505,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 101",
+		"iso": "120",
+		"latitude": 48.265,
+		"longitude": 16.315,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 102",
+		"iso": "121",
+		"latitude": 48.125,
+		"longitude": 16.545,
+		"intensity": 0.65
+	},
+	{
+		"name": "Point 103",
+		"iso": "122",
+		"latitude": 48.235,
+		"longitude": 16.255,
+		"intensity": 0.79
+	},
+	{
+		"name": "Point 104",
+		"iso": "123",
+		"latitude": 48.155,
+		"longitude": 16.435,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 105",
+		"iso": "124",
+		"latitude": 48.215,
+		"longitude": 16.475,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 106",
+		"iso": "125",
+		"latitude": 48.185,
+		"longitude": 16.295,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 107",
+		"iso": "126",
+		"latitude": 48.275,
+		"longitude": 16.465,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 108",
+		"iso": "127",
+		"latitude": 48.145,
+		"longitude": 16.245,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 109",
+		"iso": "128",
+		"latitude": 48.245,
+		"longitude": 16.385,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 110",
+		"iso": "129",
+		"latitude": 48.165,
+		"longitude": 16.515,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 111",
+		"iso": "130",
+		"latitude": 48.225,
+		"longitude": 16.275,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 112",
+		"iso": "131",
+		"latitude": 48.135,
+		"longitude": 16.365,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 113",
+		"iso": "132",
+		"latitude": 48.255,
+		"longitude": 16.425,
+		"intensity": 0.66
+	},
+	{
+		"name": "Point 114",
+		"iso": "133",
+		"latitude": 48.175,
+		"longitude": 16.545,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 115",
+		"iso": "134",
+		"latitude": 48.215,
+		"longitude": 16.235,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 116",
+		"iso": "135",
+		"latitude": 48.195,
+		"longitude": 16.455,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 117",
+		"iso": "136",
+		"latitude": 48.265,
+		"longitude": 16.355,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 118",
+		"iso": "137",
+		"latitude": 48.125,
+		"longitude": 16.485,
+		"intensity": 0.69
+	},
+	{
+		"name": "Point 119",
+		"iso": "138",
+		"latitude": 48.235,
+		"longitude": 16.305,
+		"intensity": 0.78
+	},
+	{
+		"name": "Point 120",
+		"iso": "139",
+		"latitude": 48.155,
+		"longitude": 16.525,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 121",
+		"iso": "140",
+		"latitude": 48.225,
+		"longitude": 16.415,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 122",
+		"iso": "141",
+		"latitude": 48.185,
+		"longitude": 16.225,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 123",
+		"iso": "142",
+		"latitude": 48.275,
+		"longitude": 16.495,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 124",
+		"iso": "143",
+		"latitude": 48.145,
+		"longitude": 16.365,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 125",
+		"iso": "144",
+		"latitude": 48.245,
+		"longitude": 16.445,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 126",
+		"iso": "145",
+		"latitude": 48.165,
+		"longitude": 16.295,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 127",
+		"iso": "146",
+		"latitude": 48.215,
+		"longitude": 16.345,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 128",
+		"iso": "147",
+		"latitude": 48.135,
+		"longitude": 16.515,
+		"intensity": 0.67
+	},
+	{
+		"name": "Point 129",
+		"iso": "148",
+		"latitude": 48.255,
+		"longitude": 16.235,
+		"intensity": 0.81
+	},
+	{
+		"name": "Point 130",
+		"iso": "149",
+		"latitude": 48.195,
+		"longitude": 16.425,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 131",
+		"iso": "150",
+		"latitude": 48.225,
+		"longitude": 16.505,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 132",
+		"iso": "151",
+		"latitude": 48.175,
+		"longitude": 16.265,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 133",
+		"iso": "152",
+		"latitude": 48.265,
+		"longitude": 16.435,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 134",
+		"iso": "153",
+		"latitude": 48.125,
+		"longitude": 16.295,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 135",
+		"iso": "154",
+		"latitude": 48.245,
+		"longitude": 16.515,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 136",
+		"iso": "155",
+		"latitude": 48.155,
+		"longitude": 16.355,
+		"intensity": 0.69
+	},
+	{
+		"name": "Point 137",
+		"iso": "156",
+		"latitude": 48.215,
+		"longitude": 16.465,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 138",
+		"iso": "157",
+		"latitude": 48.185,
+		"longitude": 16.325,
+		"intensity": 0.56
+	},
+	{
+		"name": "Point 139",
+		"iso": "158",
+		"latitude": 48.275,
+		"longitude": 16.545,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 140",
+		"iso": "159",
+		"latitude": 48.145,
+		"longitude": 16.415,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 141",
+		"iso": "160",
+		"latitude": 48.235,
+		"longitude": 16.365,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 142",
+		"iso": "161",
+		"latitude": 48.165,
+		"longitude": 16.445,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 143",
+		"iso": "162",
+		"latitude": 48.225,
+		"longitude": 16.225,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 144",
+		"iso": "163",
+		"latitude": 48.135,
+		"longitude": 16.475,
+		"intensity": 0.65
+	},
+	{
+		"name": "Point 145",
+		"iso": "164",
+		"latitude": 48.255,
+		"longitude": 16.305,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 146",
+		"iso": "165",
+		"latitude": 48.195,
+		"longitude": 16.535,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 147",
+		"iso": "166",
+		"latitude": 48.215,
+		"longitude": 16.415,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 148",
+		"iso": "167",
+		"latitude": 48.175,
+		"longitude": 16.355,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 149",
+		"iso": "168",
+		"latitude": 48.265,
+		"longitude": 16.265,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 150",
+		"iso": "169",
+		"latitude": 48.125,
+		"longitude": 16.425,
+		"intensity": 0.57
+	},
+	{
+		"name": "Point 151",
+		"iso": "170",
+		"latitude": 48.245,
+		"longitude": 16.295,
+		"intensity": 0.79
+	},
+	{
+		"name": "Point 152",
+		"iso": "171",
+		"latitude": 48.155,
+		"longitude": 16.505,
+		"intensity": 0.64
+	},
+	{
+		"name": "Point 153",
+		"iso": "172",
+		"latitude": 48.225,
+		"longitude": 16.435,
+		"intensity": 0.7
+	},
+	{
+		"name": "Point 154",
+		"iso": "173",
+		"latitude": 48.185,
+		"longitude": 16.245,
+		"intensity": 0.75
+	},
+	{
+		"name": "Point 155",
+		"iso": "174",
+		"latitude": 48.275,
+		"longitude": 16.415,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 156",
+		"iso": "175",
+		"latitude": 48.145,
+		"longitude": 16.335,
+		"intensity": 0.68
+	},
+	{
+		"name": "Point 157",
+		"iso": "176",
+		"latitude": 48.235,
+		"longitude": 16.525,
+		"intensity": 0.77
+	},
+	{
+		"name": "Point 158",
+		"iso": "177",
+		"latitude": 48.165,
+		"longitude": 16.215,
+		"intensity": 0.59
+	},
+	{
+		"name": "Point 159",
+		"iso": "178",
+		"latitude": 48.215,
+		"longitude": 16.385,
+		"intensity": 0.72
+	},
+	{
+		"name": "Point 160",
+		"iso": "179",
+		"latitude": 48.135,
+		"longitude": 16.455,
+		"intensity": 0.66
+	},
+	{
+		"name": "Point 161",
+		"iso": "180",
+		"latitude": 48.255,
+		"longitude": 16.345,
+		"intensity": 0.8
+	},
+	{
+		"name": "Point 162",
+		"iso": "181",
+		"latitude": 48.195,
+		"longitude": 16.475,
+		"intensity": 0.63
+	},
+	{
+		"name": "Point 163",
+		"iso": "182",
+		"latitude": 48.225,
+		"longitude": 16.555,
+		"intensity": 0.71
+	},
+	{
+		"name": "Point 164",
+		"iso": "183",
+		"latitude": 48.175,
+		"longitude": 16.295,
+		"intensity": 0.58
+	},
+	{
+		"name": "Point 165",
+		"iso": "184",
+		"latitude": 48.265,
+		"longitude": 16.505,
+		"intensity": 0.76
+	},
+	{
+		"name": "Point 166",
+		"iso": "185",
+		"latitude": 48.125,
+		"longitude": 16.365,
+		"intensity": 0.62
+	},
+	{
+		"name": "Point 167",
+		"iso": "186",
+		"latitude": 48.245,
+		"longitude": 16.425,
+		"intensity": 0.74
+	},
+	{
+		"name": "Point 168",
+		"iso": "187",
+		"latitude": 48.155,
+		"longitude": 16.245,
+		"intensity": 0.6
+	},
+	{
+		"name": "Point 169",
+		"iso": "188",
+		"latitude": 48.215,
+		"longitude": 16.515,
+		"intensity": 0.73
+	},
+	{
+		"name": "Point 170",
+		"iso": "189",
+		"latitude": 48.185,
+		"longitude": 16.355,
+		"intensity": 0.65
+	},
+	{
+		"name": "Point 171",
+		"iso": "190",
+		"latitude": 48.275,
+		"longitude": 16.475,
+		"intensity": 0.78
+	},
+	{
+		"name": "Point 172",
+		"iso": "191",
+		"latitude": 48.145,
+		"longitude": 16.305,
+		"intensity": 0.61
+	},
+	{
+		"name": "Point 173",
+		"iso": "192",
+		"latitude": 48.235,
+		"longitude": 16.415,
+		"intensity": 0.72
+	}
+]
