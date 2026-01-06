@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/estate")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @Slf4j
 public class RealEstateController {
 

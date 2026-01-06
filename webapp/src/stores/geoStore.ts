@@ -54,7 +54,7 @@ export const useGeoStore = defineStore("geoStore", {
 			console.log("Loading Vienna districts...");
 			this.loading = true;
 
-			const result = await fetch("../src/data/geo/gemeinden_999_geo.json");
+			const result = await fetch("../src/data/geo/bezirke_999_geo.json");
 
 			if (!result.ok) {
 				console.error("GeoJSON not found in /public/data");
