@@ -33,7 +33,7 @@ const calculateRadiusFromZoom = (zoom: number): number => {
 	// For 1 km, we get: radius ≈ 40075 / Math.pow(2, zoom + 8) in world units
 	// Converting to pixels for heatLayer
 	const metersPerPixel = 40075016.686 / 2 ** (zoom + 8);
-	const radiusInPixels = Math.round(200 / metersPerPixel); // 1000 meters = 1 km
+	const radiusInPixels = Math.round(300 / metersPerPixel); // 1000 meters = 1 km
 	return Math.max(radiusInPixels, 10); // minimum radius of 10 pixels
 };
 
