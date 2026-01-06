@@ -108,14 +108,15 @@ watch(search, (value) => {
 
 // Methods
 
-const addMunicipality = (name: string) => {
+const addMunicipality = async (name: string) => {
 	if (geoStore.isMunicipalitySaved(name)) {
 		geoStore.removeSelectedMunicipality(name);
 		clearSearch();
 		return;
 	}
 
-	geoStore.addSelectedMunicipality(name);
+	// Use the new action that fetches region points
+	await geoStore.addRegionAndFetchPoints(name);
 	clearSearch();
 };
 </script>

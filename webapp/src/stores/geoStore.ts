@@ -2,6 +2,7 @@ import { acceptHMRUpdate, defineStore } from "pinia";
 import type { Municipality } from "src/types/Municipality";
 import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
+import regionService from "src/regionService";
 
 export const useGeoStore = defineStore("geoStore", {
 	state: () => ({
@@ -15,6 +16,7 @@ export const useGeoStore = defineStore("geoStore", {
 			longitude: number;
 			intensity: number;
 		}>,
+		regionHeatPoints: [] as [number, number][],
 		loading: false,
 		loaded: false,
 	}),
@@ -38,6 +40,15 @@ export const useGeoStore = defineStore("geoStore", {
 		},
 		isMunicipalitySaved(name: string): boolean {
 			return this.selectedMunicipalities.includes(name);
+		},
+		async addRegionAndFetchPoints(regionName: string) {
+			console.log("addRegionAndFetchPoints called for:", regionName);
+			this.addSelectedMunicipality(regionName);
+
+			// Fetch region heat points
+			const points = await regionService.fetchRegionPoints(regionName);
+			console.log("Fetched region points:", points);
+			this.regionHeatPoints = points;
 		},
 		async loadGeoData() {
 			console.log("Loading Vienna districts...");
