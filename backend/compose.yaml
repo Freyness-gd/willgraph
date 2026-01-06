@@ -9,7 +9,8 @@ services:
       - SPRING_NEO4J_AUTHENTICATION_PASSWORD=testpassword
       - SPRING_DATA_NEO4J_DATABASE=neo4j
     depends_on:
-      - neo4j
+      neo4j:
+        condition: service_healthy
   
   neo4j:
     image: neo4j:latest
@@ -20,8 +21,16 @@ services:
     environment:
       NEO4J_AUTH: neo4j/testpassword  # username/password
       NEO4J_dbms_default__database: neo4j
+    healthcheck:
+      # Tests if the HTTP UI port is responding (indicates DB is up)
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1" ]
+      interval: 10s     # Check every 10 seconds
+      timeout: 5s       # Fail if no response in 5 seconds
+      retries: 5        # Give up after 5 failures
+      start_period: 20s
     volumes:
       - neo4j_data:/data
+
 
 volumes:
   neo4j_data:
