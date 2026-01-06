@@ -15,7 +15,7 @@
 					rounded
 					standout
 					type="search"
-					@focus="searchFocus = true"
+					@click="searchFocus = true"
 				>
 					<template v-slot:append>
 						<q-icon v-if="searchIconVisibility" name="search" />
@@ -23,15 +23,7 @@
 
 					<q-menu v-model="searchMenuOpen" anchor="bottom left" fit self="top left">
 						<q-list dense style="min-width: 250px">
-							<q-item
-								v-for="name in searchResults"
-								:key="name"
-								clickable
-								@click="
-									geoStore.addSelectedMunicipality(name);
-									clearSearch();
-								"
-							>
+							<q-item v-for="name in searchResults" :key="name" clickable @click="addMunicipality(name)">
 								<q-item-section>
 									{{ name }}
 								</q-item-section>
@@ -58,7 +50,6 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
-import { type EssentialLinkProps } from "components/EssentialLink.vue";
 import { useGeoStore } from "stores/geoStore";
 
 // Pinia GeoStore
@@ -70,16 +61,6 @@ const searchFocus = ref(false);
 const searchLoadingState = ref(false);
 const searchMenuOpen = ref(false);
 const leftDrawerOpen = ref(false);
-
-// Variables
-const linksList: EssentialLinkProps[] = [
-	{
-		title: "Docs",
-		caption: "quasar.dev",
-		icon: "school",
-		link: "https://quasar.dev",
-	},
-];
 
 // Functionality
 const toggleLeftDrawer = () => {
@@ -115,4 +96,17 @@ watch(search, (value) => {
 	if (!value) return;
 	searchMenuOpen.value = value.length > 0 && searchResults.value.length > 0;
 });
+
+// Methods
+
+const addMunicipality = (name: string) => {
+	if (geoStore.isMunicipalitySaved(name)) {
+		geoStore.removeSelectedMunicipality(name);
+		clearSearch();
+		return;
+	}
+
+	geoStore.addSelectedMunicipality(name);
+	clearSearch();
+};
 </script>

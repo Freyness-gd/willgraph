@@ -20,10 +20,17 @@ export const useGeoStore = defineStore("geoStore", {
 
 	actions: {
 		addSelectedMunicipality(name: string) {
+			console.log("Selected municipality: ", name);
 			this.selectedMunicipalities.push(name);
 		},
 		removeSelectedMunicipality(name: string) {
 			this.selectedMunicipalities = this.selectedMunicipalities.filter((m) => m !== name);
+		},
+		clearSelectedMunicipalities() {
+			this.selectedMunicipalities = [];
+		},
+		isMunicipalitySaved(name: string): boolean {
+			return this.selectedMunicipalities.includes(name);
 		},
 		async loadGeoData() {
 			console.log("Loading Vienna districts...");
