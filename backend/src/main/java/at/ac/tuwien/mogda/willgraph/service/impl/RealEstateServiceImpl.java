@@ -68,7 +68,7 @@ public class RealEstateServiceImpl implements RealEstateService {
     }
 
     @Override
-    public RealEstateDto findById(Long id) throws NotFoundException {
+    public RealEstateDto findById(String id) throws NotFoundException {
         ListingEntity listing = this.listingRepository.findById(id).orElseThrow(() -> new NotFoundException("Not found"));
         return toDto(listing);
     }

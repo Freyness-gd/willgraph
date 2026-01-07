@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface RegionRepository extends Neo4jRepository<RegionEntity, Long> {
+public interface RegionRepository extends Neo4jRepository<RegionEntity, String> {
 
     Optional<RegionEntity> findByName(String regionName);
 

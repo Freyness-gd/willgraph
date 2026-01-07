@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class RealEstateDto {
-    private Long id;
+    private String id;
     private String externalUrl;
     private String title;
 

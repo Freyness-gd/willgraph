@@ -26,11 +26,11 @@ public class RegionController {
     }
 
 
-    @GetMapping("/{id}")
-    public ResponseEntity<RegionDto> getRegionById(@PathVariable Long id) {
-        log.info("GET /regions/{}", id);
+    @GetMapping("/{iso}")
+    public ResponseEntity<RegionDto> getRegionById(@PathVariable String iso) {
+        log.info("GET /regions/{}", iso);
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(regionService.getRegionById(id));
+            return ResponseEntity.status(HttpStatus.OK).body(regionService.getRegionById(iso));
         } catch (NotFoundException _) {
             return ResponseEntity.notFound().build();
         }

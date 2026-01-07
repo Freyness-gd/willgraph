@@ -1,28 +1,33 @@
 package at.ac.tuwien.mogda.willgraph.service.impl;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.PoIDto;
+import at.ac.tuwien.mogda.willgraph.entity.AmenityTypeEntity;
 import at.ac.tuwien.mogda.willgraph.entity.PointOfInterestEntity;
 import at.ac.tuwien.mogda.willgraph.repository.AddressRepository;
+import at.ac.tuwien.mogda.willgraph.repository.AmenityTypeRepository;
 import at.ac.tuwien.mogda.willgraph.repository.PoIRepository;
 import at.ac.tuwien.mogda.willgraph.service.PoIService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PoIServiceImpl implements PoIService {
 
     private final PoIRepository poiRepository;
     private final AddressRepository addressRepository;
-
-    public PoIServiceImpl(PoIRepository poiRepository, AddressRepository addressRepository) {
-        this.addressRepository = addressRepository;
-        this.poiRepository = poiRepository;
-    }
+    private final AmenityTypeRepository amenityTypeRepository;
 
     @Override
     public List<PointOfInterestEntity> findAllOfType(String type) {
-        return this.poiRepository.findAllByType(type);
+        AmenityTypeEntity typeEntity = this.amenityTypeRepository.findById(type).orElse(null);
+        if (typeEntity == null) {
+            return Collections.emptyList();
+        }
+        return this.poiRepository.findAllByType(typeEntity);
     }
 
     @Override

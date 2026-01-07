@@ -9,7 +9,6 @@ import org.springframework.data.geo.Point;
 @Builder
 public class RegionDto {
     //ISO + Name probably unique...
-    private Long id;
     private String name;
     private String iso;
     private Geometry geometry;

@@ -3,6 +3,7 @@ package at.ac.tuwien.mogda.willgraph.entity;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.neo4j.core.schema.*;
+import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
 import java.time.LocalDateTime;
 
@@ -14,8 +15,8 @@ import static org.springframework.data.neo4j.core.schema.Relationship.Direction.
 @Builder
 public class ListingEntity {
     @Id
-    @GeneratedValue
-    private Long id;
+    @GeneratedValue(generatorClass = UUIDStringGenerator.class)
+    private String id;
 
     @Property("url")
     private String externalUrl;

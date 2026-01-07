@@ -27,9 +27,8 @@ public class RealEstateController {
         if (id == null || id.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        Long idLong = Long.parseLong(id);
         try {
-            return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findById(idLong));
+            return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findById(id));
         } catch (NotFoundException _) {
             return ResponseEntity.notFound().build();
         }

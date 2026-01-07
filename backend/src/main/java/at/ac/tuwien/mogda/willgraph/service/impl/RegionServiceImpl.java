@@ -29,9 +29,9 @@ public class RegionServiceImpl implements RegionService {
     }
 
     @Override
-    public RegionDto getRegionById(Long id) throws NotFoundException {
-        return toDto(regionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Region with ID: " + id + " not found!")));
+    public RegionDto getRegionById(String iso) throws NotFoundException {
+        return toDto(regionRepository.findById(iso)
+                .orElseThrow(() -> new NotFoundException("Region with iso: " + iso + " not found!")));
     }
 
     @Override
@@ -49,7 +49,6 @@ public class RegionServiceImpl implements RegionService {
 
     private RegionDto toDto(RegionEntity region) {
         return RegionDto.builder()
-                .id(region.getId())
                 .name(region.getName())
                 .iso(region.getIso())
                 .geometry(region.getGeometry())

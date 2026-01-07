@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface ListingRepository extends Neo4jRepository<ListingEntity, Long> {
+public interface ListingRepository extends Neo4jRepository<ListingEntity, String> {
     @Query("MATCH (l:Listing)-[r:LOCATED_AT]->(a:Address) " +
             "WHERE a.location.x >= $minLon AND a.location.x <= $maxLon " +
             "AND   a.location.y >= $minLat AND a.location.y <= $maxLat " +
