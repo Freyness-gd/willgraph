@@ -2,7 +2,7 @@ package at.ac.tuwien.mogda.willgraph.controller.dto;
 
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.data.geo.Point;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 
 @Data
 @Builder
@@ -14,5 +14,6 @@ public class AddressDto {
     private String city;
     private String countryCode;
     private Long osmId;
-    private Point location;
+    private GeographicPoint2d location;
+    private Double distanceToNearestStation;
 }

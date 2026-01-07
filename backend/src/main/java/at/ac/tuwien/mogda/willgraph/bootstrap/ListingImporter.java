@@ -16,6 +16,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStreamReader;
@@ -48,17 +49,14 @@ public class ListingImporter implements CommandLineRunner {
         }
 
         log.info("Starting Listing Import...");
-
-        // 1. Pre-load Regions for fast spatial lookup
-        // We fetch all regions so we can check "contains(point)" in memory
         this.cachedRegions = regionRepository.findAll();
         log.info("Loaded {} regions into memory for spatial mapping.", cachedRegions.size());
 
-        // 2. Import Willhaben
         importCsv("willhaben_output.csv", "willhaben");
-
-        // 3. Import ImmoScout
         importCsv("immoscout_output.csv", "immoscout");
+
+        log.info("Generating proximity links for all new addresses...");
+        addressRepository.generateAllProximityLinks();
 
         log.info("Listing Import Finished.");
     }
@@ -149,8 +147,8 @@ public class ListingImporter implements CommandLineRunner {
         AddressEntity newAddress = AddressEntity.builder()
                 .fullAddressString(rawAddress)
                 .osmId(osmId)
+                .location(new GeographicPoint2d(lat, lon))
                 .build();
-        newAddress.setLocation(lat, lon);
 
         // D. Link to Region (Spatial Geometry Check)
         // We check which Region polygon contains this Point
@@ -190,7 +188,7 @@ public class ListingImporter implements CommandLineRunner {
         try {
             String val = record.get(col);
             return (val == null || val.isBlank()) ? null : Double.parseDouble(val);
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }
@@ -201,7 +199,7 @@ public class ListingImporter implements CommandLineRunner {
             // Handle "3" or "3 Zimmer" simply
             val = val.replaceAll("[^0-9]", "");
             return (val.isBlank()) ? null : Integer.parseInt(val);
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }
@@ -210,7 +208,7 @@ public class ListingImporter implements CommandLineRunner {
         try {
             String val = record.get(col);
             return (val == null || val.isBlank()) ? null : Long.parseLong(val.split("\\.")[0]); // Handle "123.0"
-        } catch (Exception e) {
+        } catch (Exception _) {
             return null;
         }
     }
@@ -222,7 +220,7 @@ public class ListingImporter implements CommandLineRunner {
                 String dateStr = record.get("scraped_at");
                 // Simple parser - you might need a customized DateTimeFormatter for nanoseconds
                 return LocalDateTime.parse(dateStr.replace(" ", "T"));
-            } catch (Exception e) {
+            } catch (Exception _) {
                 return LocalDateTime.now();
             }
         }

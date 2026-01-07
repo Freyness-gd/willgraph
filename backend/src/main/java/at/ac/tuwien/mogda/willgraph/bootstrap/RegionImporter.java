@@ -12,7 +12,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.data.geo.Point;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -97,14 +97,13 @@ public class RegionImporter implements CommandLineRunner {
 
         // 4. Calculate Center (Centroid)
         org.locationtech.jts.geom.Point jtsCentroid = multiPolygon.getCentroid();
-        Point springCenter = new Point(jtsCentroid.getX(), jtsCentroid.getY());
 
         // 5. Create and Save Entity
         RegionEntity region = RegionEntity.builder()
                 .name(name)
                 .iso(iso)
                 .geometry(multiPolygon)
-                .center(springCenter)
+                .center(new GeographicPoint2d(jtsCentroid.getY(), jtsCentroid.getX()))
                 .build();
 
         regionRepository.save(region);

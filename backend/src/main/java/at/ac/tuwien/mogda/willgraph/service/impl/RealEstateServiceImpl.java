@@ -2,13 +2,16 @@ package at.ac.tuwien.mogda.willgraph.service.impl;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.AddressDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.AddressEntity;
 import at.ac.tuwien.mogda.willgraph.entity.ListingEntity;
 import at.ac.tuwien.mogda.willgraph.entity.RegionEntity;
 import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
+import at.ac.tuwien.mogda.willgraph.repository.AddressRepository;
 import at.ac.tuwien.mogda.willgraph.repository.ListingRepository;
 import at.ac.tuwien.mogda.willgraph.repository.RegionRepository;
 import at.ac.tuwien.mogda.willgraph.service.RealEstateService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -20,16 +23,13 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RealEstateServiceImpl implements RealEstateService {
 
     private final ListingRepository listingRepository;
+    private final AddressRepository addressRepository;
     private final RegionRepository regionRepository;
     private final GeometryFactory geometryFactory = new GeometryFactory();
-
-    public RealEstateServiceImpl(ListingRepository listingRepository, RegionRepository regionRepository) {
-        this.listingRepository = listingRepository;
-        this.regionRepository = regionRepository;
-    }
 
     public List<RealEstateDto> findRealEstatesInRegion(String regionName, String iso) throws NotFoundException {
         RegionEntity region = this.regionRepository.findByName(regionName).orElseThrow(
@@ -44,15 +44,15 @@ public class RealEstateServiceImpl implements RealEstateService {
                 envelope.getMinY() + " to " + envelope.getMaxY() + " (Lat/Y)"
         );
         List<ListingEntity> candidates = listingRepository.findInsideBoundingBox(
-                envelope.getMinY(),
                 envelope.getMinX(),
-                envelope.getMaxY(),
-                envelope.getMaxX()
+                envelope.getMinY(),
+                envelope.getMaxX(),
+                envelope.getMaxY()
         );
         return candidates.stream()
                 .filter(listing -> {
                     var neoPoint = listing.getAddress().getLocation();
-                    var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getX(), neoPoint.getY()));
+                    var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
                     return regionPolygon.contains(jtsPoint);
                 })
                 .map(this::toDto)
@@ -65,6 +65,14 @@ public class RealEstateServiceImpl implements RealEstateService {
                 .stream()
                 .map(this::toDto)
                 .toList();
+    }
+
+    @Override
+    public List<StationDistanceDto> findStationsNearby(String id) throws NotFoundException {
+        String addressId = this.listingRepository.findAddressIdByListingId(id).orElseThrow(
+                () -> new NotFoundException("Listing with id: " + id + " not found!")
+        );
+        return this.addressRepository.findStationsNearAddress(addressId);
     }
 
     @Override
@@ -89,6 +97,13 @@ public class RealEstateServiceImpl implements RealEstateService {
                 .source(listing.getSource())
                 .build();
         if (address != null) {
+            Double minDistance = null;
+            if (address.getNearbyStations() != null && !address.getNearbyStations().isEmpty()) {
+                minDistance = address.getNearbyStations().stream()
+                        .mapToDouble(at.ac.tuwien.mogda.willgraph.entity.TransportConnection::getDistanceInMeters)
+                        .min()
+                        .orElse(Double.MAX_VALUE);
+            }
             dto.setAddress(AddressDto.builder()
                     .osmId(address.getOsmId())
                     .city(address.getCity())
@@ -97,6 +112,7 @@ public class RealEstateServiceImpl implements RealEstateService {
                     .street(address.getStreet())
                     .fullAddressString(address.getFullAddressString())
                     .location(address.getLocation())
+                    .distanceToNearestStation(minDistance)
                     .build());
         }
         return dto;

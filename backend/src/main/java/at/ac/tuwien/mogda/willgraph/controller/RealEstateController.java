@@ -1,6 +1,7 @@
 package at.ac.tuwien.mogda.willgraph.controller;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
 import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import at.ac.tuwien.mogda.willgraph.service.RealEstateService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class RealEstateController {
 
     @GetMapping("/{id}")
     public ResponseEntity<RealEstateDto> findById(@PathVariable String id) {
+        log.info("GET /api/estate/{}", id);
         if (id == null || id.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
@@ -37,6 +39,7 @@ public class RealEstateController {
 
     @GetMapping()
     public ResponseEntity<List<RealEstateDto>> findInsideRegion(@RequestParam(required = false) String region, @RequestParam(required = false) String iso) {
+        log.info("GET /api/estate?region={}&iso={}", region, iso);
         if (region == null && iso == null) {
             return ResponseEntity.status(HttpStatus.OK).body(realEstateService.findAll());
         }
@@ -45,6 +48,15 @@ public class RealEstateController {
         } catch (NotFoundException _) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+    }
 
+    @GetMapping("/{id}/transport")
+    public ResponseEntity<List<StationDistanceDto>> findStationsNearby(@PathVariable String id) {
+        log.info("GET /api/estate/{}/transport", id);
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(this.realEstateService.findStationsNearby(id));
+        } catch (NotFoundException _) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

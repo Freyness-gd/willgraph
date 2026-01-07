@@ -1,7 +1,6 @@
 package at.ac.tuwien.mogda.willgraph.entity;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import org.springframework.data.neo4j.core.schema.*;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
@@ -9,10 +8,12 @@ import java.time.LocalDateTime;
 
 import static org.springframework.data.neo4j.core.schema.Relationship.Direction.OUTGOING;
 
-//TODO: Listing or Real Estate?
 @Node("Listing")
-@Data
+@Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ListingEntity {
     @Id
     @GeneratedValue(generatorClass = UUIDStringGenerator.class)
