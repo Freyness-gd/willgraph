@@ -64,6 +64,8 @@ dependencies {
 
     //java topology (jts)
     implementation("org.locationtech.jts:jts-core:1.20.0")
+    //serialization for jackson (jts)
+    implementation("com.bedatadriven:jackson-datatype-jts:2.4")
 
     //csv stuff
     implementation("org.apache.commons:commons-csv:1.14.1")

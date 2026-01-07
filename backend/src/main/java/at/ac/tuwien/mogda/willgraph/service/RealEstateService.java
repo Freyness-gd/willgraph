@@ -6,7 +6,7 @@ import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import java.util.List;
 
 public interface RealEstateService {
-    RealEstateDto findById(Long id);
+    RealEstateDto findById(Long id) throws NotFoundException;
 
     List<RealEstateDto> findRealEstatesInRegion(String region, String iso) throws NotFoundException;
 
