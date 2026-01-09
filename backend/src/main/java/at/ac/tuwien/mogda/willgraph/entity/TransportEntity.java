@@ -2,9 +2,9 @@ package at.ac.tuwien.mogda.willgraph.entity;
 
 import lombok.*;
 import org.springframework.data.annotation.Version;
-import org.springframework.data.geo.Point;
 import org.springframework.data.neo4j.core.schema.Id;
 import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 
 @Node("Transport")
 @Getter
@@ -20,7 +20,7 @@ public class TransportEntity {
     private String name; //
     private String type; //Such as "Bus", "Tram", ...
     private String line;
-    private Point location;
+    private GeographicPoint2d location;
 // REMOVED Because of recursion, but still in graph (needed for path queries)
 //    @Relationship(type = "CONNECTED_TO", direction = OUTGOING)
 //    private Set<TransportLeg> nextStations;

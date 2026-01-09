@@ -17,7 +17,8 @@ public interface TransportRepository extends Neo4jRepository<TransportEntity, St
             "WITH t, point.distance(t.location, point({latitude: $lat, longitude: $lon})) AS dist " +
             "RETURN t.name AS name, t.type AS type, t.line AS line, " +
             "       dist AS distanceInMeters, " +
-            "       (dist / 80.0) AS walkingDurationInMinutes " +
+            "       (dist / 80.0) AS walkingDurationInMinutes, " +
+            "       t.location as location " +
             "ORDER BY dist ASC")
     List<StationDistanceDto> findStationsByLocation(double lat, double lon, double radiusMeters);
 

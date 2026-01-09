@@ -50,7 +50,7 @@ class DBPClient:
             self.token = response.json().get('access_token')
             print("Authentication successful.")
         except Exception as e:
-            print(f"Authentication failed: {e}")
+            print(f"Authentication failed, maybe .env is missing or not correct?: {e}")
             self.token = None
 
     def get_headers(self):

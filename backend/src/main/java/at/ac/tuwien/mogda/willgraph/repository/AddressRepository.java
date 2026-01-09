@@ -35,7 +35,8 @@ public interface AddressRepository extends Neo4jRepository<AddressEntity, String
             "       t.type AS type, " +
             "       t.line AS line, " +
             "       r.distanceInMeters AS distanceInMeters, " +
-            "       r.walkingDurationInMinutes AS walkingDurationInMinutes " +
+            "       r.walkingDurationInMinutes AS walkingDurationInMinutes, " +
+            "       t.location as location " +
             "ORDER BY r.distanceInMeters ASC")
     List<StationDistanceDto> findStationsNearAddress(@Param("addressId") String addressId);
 
