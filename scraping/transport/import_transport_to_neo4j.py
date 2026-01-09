@@ -1,11 +1,14 @@
 import csv
+import os
 from neo4j import GraphDatabase
 
 BASE_DIR = './gtfs_data'
 OUTPUT_NODES = 'transport_nodes.csv'
 OUTPUT_EDGES = 'transport_edges.csv'
-URI = "bolt://localhost:7687"
-AUTH = ("neo4j", "testpassword")
+URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "testpassword")
+AUTH = (NEO4J_USER, NEO4J_PASSWORD)
 
 BATCH_SIZE = 1000
 
