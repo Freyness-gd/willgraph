@@ -3,11 +3,10 @@
 		<q-header elevated>
 			<q-toolbar>
 				<q-toolbar-title> WillGraph </q-toolbar-title>
-				<div class="search-wrapper" @click="focusSearch">
+				<div class="search-wrapper">
 					<q-input
 						ref="searchInput"
 						v-model="search"
-						:loading="searchLoadingState"
 						class="p-2"
 						clearable
 						debounce="500"
@@ -15,13 +14,12 @@
 						rounded
 						standout
 						type="search"
-						@keydown="handleKeyDown"
 					>
 						<template v-slot:append>
 							<q-icon v-if="searchIconVisibility" name="search" />
 						</template>
 
-						<q-menu v-model="searchMenuOpen" anchor="bottom left" fit self="top left">
+						<q-menu v-model="searchMenuOpen" anchor="bottom left" fit no-focus no-refocus self="top left">
 							<q-list dense style="min-width: 250px">
 								<q-item v-if="searchResults.length === 0" disable>
 									<q-item-section> No results found </q-item-section>
@@ -45,7 +43,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useGeoStore } from "stores/geoStore";
 import type { QInput } from "quasar";
 
@@ -54,28 +52,8 @@ const geoStore = useGeoStore();
 
 // Reactive State
 const search = ref("");
-const searchLoadingState = ref(false);
 const searchMenuOpen = ref(false);
 const searchInput = ref<QInput | null>(null);
-const leftDrawerOpen = ref(false);
-
-// Functionality
-const toggleLeftDrawer = () => {
-	leftDrawerOpen.value = !leftDrawerOpen.value;
-};
-
-const focusSearch = async () => {
-	await nextTick();
-	const inputElement = searchInput.value?.$el?.querySelector("input") as HTMLInputElement;
-	inputElement?.focus();
-};
-
-const handleKeyDown = (event: KeyboardEvent) => {
-	// Hier können Sie später Keyboard-Events wie Escape, Enter, etc. behandeln
-	if (event.key === "Escape") {
-		clearSearch();
-	}
-};
 
 const clearSearch = () => {
 	search.value = "";
@@ -98,14 +76,13 @@ const searchResults = computed(() => {
 
 	const results = geoStore.municipalitiesNames.filter((name) => name.toLowerCase().includes(query));
 
-	return results.slice(0, 5);
+	return results.slice(0, 10);
 });
 
 // Watcher
 watch(search, (value) => {
 	searchMenuOpen.value = value.length >= 3 && searchResults.value.length > 0;
 });
-
 // Methods
 
 const addMunicipality = async (name: string) => {
