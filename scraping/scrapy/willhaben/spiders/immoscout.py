@@ -7,6 +7,22 @@ from scrapy_playwright.page import PageMethod
 
 class ImmoscoutSpider(scrapy.Spider):
 
+
+    name = "immoscout"
+    handle_httpstatus_list = [401] #avoids crashes when we don't solve captcha
+    custom_settings = {
+        'FEEDS': {
+            'immoscout_output.csv': {
+                'format': 'csv',
+                'encoding': 'utf8',
+                'overwrite': True,
+            },
+        },
+        "ITEM_PIPELINES": {
+            "willhaben.pipelines.ImmoscoutPipeline": 300,
+            "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
+        }
+    }
     slow_scroll = """
                         () => new Promise(resolve => {
                             const distance = 600;
@@ -27,20 +43,6 @@ class ImmoscoutSpider(scrapy.Spider):
                         })
                         """
     
-    name = "immoscout"
-    handle_httpstatus_list = [401] #avoids crashes when we don't solve captcha
-    custom_settings = {
-        'FEEDS': {
-            'immoscout_output.csv': {
-                'format': 'csv',
-                'encoding': 'utf8',
-                'overwrite': True,
-            },
-        },
-        "ITEM_PIPELINES": {
-            "willhaben.pipelines.ImmoscoutPipeline": 300,
-        }
-    }
     async def start(self):
         url = "https://www.immobilienscout24.at/regional/oesterreich/wohnung-mieten"
         yield scrapy.Request(
@@ -105,6 +107,7 @@ class ImmoscoutSpider(scrapy.Spider):
                     )
 
                     #if listing has a div with ul then make has ul true this means its a listing for a building with multiple apartments
+                    #TODO make sure when data cleaning that the mega listings are handled properly
                     if has_section and not has_children: 
                         url = response.urljoin(link.attrib.get("href"))
                         

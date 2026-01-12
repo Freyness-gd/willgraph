@@ -71,15 +71,3 @@ class ImmoscoutItem:
     lat: Optional[str] = None
     lon: Optional[str] = None
 
-    # probably useless
-    def to_scrapy_item(self) -> scrapy.Item:
-        """Convert the dataclass to a plain `scrapy.Item` (dict-like).
-
-        This helper is convenient for passing the item into existing
-        Scrapy pipelines that expect `scrapy.Item` or mapping objects.
-        """
-        data = asdict(self)
-        si = scrapy.Item()
-        for k, v in data.items():
-            si.setdefault(k, v)
-        return si

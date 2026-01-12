@@ -6,9 +6,19 @@
 
 # useful for handling different item types with a single interface
 import re
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem, NotConfigured
+
+try:
+    from neo4j import GraphDatabase
+except ImportError:  # pragma: no cover - optional dependency
+    GraphDatabase = None
+
 from willhaben.items import ImmoscoutItem, WillhabenItem
-from willhaben.scriptToParseOsmId import  query_location
+from willhaben.scriptToParseOsmId import query_location
+
 class WillhabenPipeline:
     def process_item(self, item, spider):
         if not isinstance(item, WillhabenItem):
@@ -99,7 +109,7 @@ class WillhabenPipeline:
     
 
 class ImmoscoutPipeline:
-    def process_item(self, item, spider):
+    async def process_item(self, item, spider):
         if not isinstance(item, ImmoscoutItem):
             return item
 
@@ -185,3 +195,118 @@ class ImmoscoutPipeline:
         if value == '':
             return None
         return value
+
+class Neo4jPipeline:
+    """Writes listing items to Neo4j using parameterized Cypher with batching."""
+
+    CYPHER_UPSERT = """
+        UNWIND $rows AS row
+
+        MERGE (re:`Real Estate` {url: row.url})
+        SET
+            re.livingArea = coalesce(row.size_m2, re.livingArea),
+            re.area       = coalesce(row.size_m2, re.area),
+            re.found      = coalesce(row.scraped_at, re.found),
+            re.source     = coalesce(row.source, re.source)
+
+        MERGE (rent:Rental {url: row.url})
+        SET
+            rent.priceInEur = coalesce(row.price_eur, rent.priceInEur),
+            rent.priceAt    = coalesce(row.scraped_at, rent.priceAt)
+
+        MERGE (rm:Rooms {url: row.url})
+        SET
+            rm.count = coalesce(row.rooms, rm.count)
+
+        MERGE (addr:Address {streetId: row.osm_id})
+        SET
+            addr.Street    = coalesce(row.location, addr.Street),
+            addr.latitude  = coalesce(row.lat, addr.latitude),
+            addr.longitude = coalesce(row.lon, addr.longitude)
+
+        MERGE (re)-[:HAS_ROOMS]->(rm)
+        MERGE (re)-[:HAS_TYPE]->(rent)
+        MERGE (re)-[:IS_IN]->(addr)
+        MERGE (addr)-[:HAS_REAL_ESTATE]->(re)
+        """
+
+    def __init__(self, uri: str, user: str, password: str, database: Optional[str] = None, batch_size: int = 200):
+        if GraphDatabase is None:
+            raise NotConfigured("neo4j driver not installed; add 'neo4j' to requirements")
+
+        if not (uri and user and password):
+            raise NotConfigured("NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD must be set")
+
+        self.uri = uri
+        self.user = user
+        self.password = password
+        self.database = database
+        self.driver = None
+        self.session = None
+        self.batch: List[Dict[str, Any]] = []
+        self.batch_size = max(1, batch_size)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        settings = crawler.settings
+        uri = settings.get("NEO4J_URI")
+        user = settings.get("NEO4J_USER")
+        password = settings.get("NEO4J_PASSWORD")
+        database = settings.get("NEO4J_DATABASE")
+        batch_size = settings.getint("NEO4J_BATCH_SIZE", 200)
+        return cls(uri, user, password, database, batch_size)
+
+    def open_spider(self, spider):
+        self.driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+        self.session = self.driver.session(database=self.database)
+
+    def close_spider(self, spider)  :
+        self._flush_batch()
+        if self.session:
+            self.session.close()
+        if self.driver:
+            self.driver.close()
+
+    def process_item(self, item, spider):
+        if not isinstance(item, (ImmoscoutItem, WillhabenItem)):
+            return item
+
+        adapter = ItemAdapter(item)
+        url = adapter.get("url")
+        if not url:
+            spider.logger.warning("Neo4jPipeline: missing url, skipping item")
+            raise DropItem("missing url")
+
+        def _val(key: str):
+            v = adapter.get(key)
+            return v.isoformat() if isinstance(v, datetime) else v
+
+        self.batch.append({
+            "url": url,
+            "size_m2": _val("size_m2"),
+            "price_eur": _val("price_eur"),
+            "rooms": _val("rooms"),
+            "location": _val("location"),
+            "osm_id": _val("osm_id"),
+            "lat": _val("lat"),
+            "lon": _val("lon"),
+            "scraped_at": _val("scraped_at"),
+            "source": spider.name,
+        })
+        if len(self.batch) >= self.batch_size:
+            self._flush_batch()
+
+        return item
+
+    def _flush_batch(self):
+        print("flushing batch to Neo4j..." + str(len(self.batch)))
+        if not self.batch or self.session is None:
+            return
+
+        rows = self.batch
+        self.batch = []
+
+        def _txn(tx, data):
+            tx.run(self.CYPHER_UPSERT, rows=data)
+
+        self.session.execute_write(_txn, rows)

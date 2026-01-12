@@ -19,6 +19,11 @@ ADDONS = {}
 
 LOG_LEVEL = "INFO"
 
+NEO4J_URI = "neo4j://localhost:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASSWORD = "testpassword"
+NEO4J_DATABASE = "neo4j"
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "willhaben (+http://www.yourdomain.com)"
 
@@ -38,6 +43,8 @@ SCRAPE_LONG_DELAY = 300
 DOWNLOAD_DELAY = 0
 
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+
+
 
 
 PLAYWRIGHT_LAUNCH_OPTIONS = {
@@ -125,4 +132,4 @@ DOWNLOADER_MIDDLEWARES = {
 FEED_EXPORT_ENCODING = "utf-8"
 
 # Maximum number of requests (scrapes) to perform. 0 = unlimited
-SCRAPE_MAX = 5
+SCRAPE_MAX = 2

@@ -20,3 +20,4 @@ w3lib==2.3.1
 zope.interface==8.1.1
 Scrapy==2.13.4
 scrapy-playwright==0.0.44
+neo4j==6.0.3

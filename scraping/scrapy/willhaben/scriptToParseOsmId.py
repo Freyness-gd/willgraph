@@ -8,7 +8,7 @@ import sys
 INPUT_CSV = "willhaben_output.csv"
 OUTPUT_CSV = "output_with_osm.csv"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-
+#TODO restrict to vienna only and make async
 headers = {
     "User-Agent": "LocationLookupScript/1.0"  # Nominatim requires a User-Agent
 }

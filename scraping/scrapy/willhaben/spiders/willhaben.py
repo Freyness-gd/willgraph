@@ -17,6 +17,8 @@ class WillhabenSpider(scrapy.Spider):
         },
         "ITEM_PIPELINES": {
             "willhaben.pipelines.WillhabenPipeline": 300,
+            "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
+
         }
     }
 
