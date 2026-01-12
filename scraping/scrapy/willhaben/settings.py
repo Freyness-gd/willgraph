@@ -93,7 +93,10 @@ PLAYWRIGHT_BROWSER_CONTEXTS = {
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     "willhaben.pipelines.WillhabenPipeline": 200,
-
+    "willhaben.pipelines.ImmoscoutPipeline": 200,
+    "willhaben.pipelines.ValidationPipeline": 250,
+    "willhaben.pipelines.DeduplicationPipeline": 275,  # runs after validation, before Neo4j
+    "willhaben.pipelines.Neo4jPipeline": 300,
 }
 
 DOWNLOAD_HANDLERS = {

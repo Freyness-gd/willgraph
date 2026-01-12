@@ -4,13 +4,13 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 
-# useful for handling different item types with a single interface
+import hashlib
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem, NotConfigured
-
+import math
 try:
     from neo4j import GraphDatabase
 except ImportError:  # pragma: no cover - optional dependency
@@ -18,183 +18,262 @@ except ImportError:  # pragma: no cover - optional dependency
 
 from willhaben.items import ImmoscoutItem, WillhabenItem
 from willhaben.scriptToParseOsmId import query_location
+MIN_PRICE_EUR = 100
+MAX_PRICE_EUR = 100_000
+MIN_SIZE_M2 = 5
+MAX_SIZE_M2 = 1000
 
-class WillhabenPipeline:
+class ValidationPipeline:
+    """Validates items against required fields, bounds, and quality checks."""
+
+    # Reasonable bounds for real estate listings
+
+    MIN_ROOMS = 0.5
+    MAX_ROOMS = 20
+
+    def __init__(self):
+        self.stats = {
+            'validated': 0,
+            'dropped_missing_url': 0,
+            'dropped_missing_title': 0,
+            'dropped_missing_location': 0,
+            'dropped_price_out_of_bounds': 0,
+            'dropped_size_out_of_bounds': 0,
+            'dropped_rooms_out_of_bounds': 0,
+        }
+
     def process_item(self, item, spider):
+        if not isinstance(item, (ImmoscoutItem, WillhabenItem)):
+            return item
+
+        adapter = ItemAdapter(item)
+        reason = self._validate(adapter)
+
+        if reason:
+            spider.logger.warning(
+                f"ValidationPipeline dropped item from {spider.name}: {reason} | url={adapter.get('url')}"
+            )
+            self.stats[reason] += 1
+            raise DropItem(reason)
+
+        self.stats['validated'] += 1
+        return item
+
+    def _validate(self, adapter: ItemAdapter) -> Optional[str]:
+        """Return validation failure reason or None if valid."""
+        url = adapter.get('url')
+        title = adapter.get('title')
+        location = adapter.get('location')
+        price = adapter.get('price_eur')
+        size = adapter.get('size_m2')
+        rooms = adapter.get('rooms')
+
+        # Required fields
+        if not url or not str(url).strip():
+            return 'dropped_missing_url'
+        if not title or not str(title).strip():
+            return 'dropped_missing_title'
+        if not location or not str(location).strip():
+            return 'dropped_missing_location'
+
+        # Normalized numeric bounds (only validate if present)
+        if price is not None and not (MIN_PRICE_EUR <= price <= MAX_PRICE_EUR):
+            return 'dropped_price_out_of_bounds'
+
+        if size is not None and not (MIN_SIZE_M2 <= size <= MAX_SIZE_M2):
+            return 'dropped_size_out_of_bounds'
+
+        if rooms is not None and not (self.MIN_ROOMS <= rooms <= self.MAX_ROOMS):
+            return 'dropped_rooms_out_of_bounds'
+
+        return None
+
+    def close_spider(self, spider):
+        spider.logger.info(f"ValidationPipeline stats: {self.stats}")
+
+
+class DeduplicationPipeline:
+    """Deduplicates items based on content similarity with price/size tolerance."""
+
+    # Tolerance ranges for considering items similar
+    PRICE_TOLERANCE_PCT = 1  # 1% price difference allowed
+    SIZE_TOLERANCE_PCT = 0.5   # 0.5% size difference allowed
+
+    def __init__(self):
+        self.seen_hashes: set = set()
+        self.stats = {
+            'processed': 0,
+            'dropped_duplicate': 0,
+        }
+
+    def process_item(self, item, spider):
+        if not isinstance(item, (ImmoscoutItem, WillhabenItem)):
+            return item
+
+        adapter = ItemAdapter(item)
+        item_hash = self._compute_hash(adapter)
+
+        if item_hash in self.seen_hashes:
+            spider.logger.debug(
+                f"DeduplicationPipeline dropped duplicate: {adapter.get('url')}"
+            )
+            self.stats['dropped_duplicate'] += 1
+            raise DropItem(f"Duplicate item (hash: {item_hash})")
+
+        self.seen_hashes.add(item_hash)
+        self.stats['processed'] += 1
+        return item
+
+    def _compute_hash(self, adapter: ItemAdapter) -> str:
+        """Create a hash based on location, title, price, and size with tolerance."""
+        location = adapter.get('location', '')
+        title = adapter.get('title', '')
+        price = adapter.get('price_eur')
+        size = adapter.get('size_m2')
+
+        #this will at least work on listings with the same title
+
+        # Quantize price and size to tolerance ranges to catch near-duplicates
+        price_bucket = self._quantize(price, MIN_PRICE_EUR, MAX_PRICE_EUR, self.PRICE_TOLERANCE_PCT) if price else 'None'
+        size_bucket = self._quantize(size, MIN_SIZE_M2, MAX_SIZE_M2, self.SIZE_TOLERANCE_PCT) if size else 'None'
+
+        # Create signature from normalized fields (excluding URL which is unique)
+        signature = f"{location}|{title}|{price_bucket}|{size_bucket}".lower()
+        return hashlib.sha256(signature.encode()).hexdigest()
+
+    @staticmethod
+    def _quantize(value: float, min_v: float, max_v: float, pct: float) -> int:
+        """Quantize value into buckets of tolerance_pct for near-duplicate detection."""
+
+        if value is None:
+            return -1
+        if pct <= 0:
+            raise ValueError("pct must be > 0")
+        if max_v <= min_v:
+            raise ValueError("max_v must be > min_v")
+
+        span = max_v - min_v
+        bucket_size = span * (pct / 100.0)
+        n_buckets = int(math.ceil(span / bucket_size))  # for pct=5 -> 20
+
+        # clamp to range
+        v = min(max(value, min_v), max_v)
+
+        # map to bucket; ensure max_v lands in last bucket
+        idx = int((v - min_v) // bucket_size)
+        return min(idx, n_buckets - 1)
+
+    def close_spider(self, spider):
+        spider.logger.info(f"DeduplicationPipeline stats: {self.stats}")
+
+
+class BaseCleaningPipeline:
+    """Reusable parsing/normalization helpers for heterogeneous sources."""
+
+    location_regex_subs: Sequence[Tuple[str, str]] = ()
+
+    def __init__(self):
+        self.osm_failures = 0
+
+    def _normalize_common(self, adapter: ItemAdapter, spider=None) -> None:
+        adapter['size_m2'] = self._to_float(adapter.get('raw_size'), drop_tokens=('m²', 'm2', ' m²'))
+        adapter['rooms'] = self._to_float(adapter.get('raw_rooms'), drop_tokens=('Zimmer',))
+        adapter['price_eur'] = self._parse_price(adapter.get('price_raw'))
+        adapter['location'] = self._parse_location(adapter.get('location'))
+        self._attach_osm(adapter, spider)
+
+    def _to_float(self, value, drop_tokens: Iterable[str] = ()):  
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+
+        text = str(value).strip()
+        if not text:
+            return None
+        for token in drop_tokens:
+            text = text.replace(token, '')
+        text = text.replace('.', '').replace(' ', '')
+        text = text.replace(',', '.')
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+    def _parse_price(self, value):  
+        if value is None:
+            return None
+        text = str(value).strip()
+        text = re.sub(r'[^\d\.,]', '', text)
+        text = text.replace('.', '').replace(' ', '')
+        text = text.replace(',', '.')
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+    def _parse_location(self, value):  
+        if value is None:
+            return None
+        text = str(value).strip().replace('"', '')
+        for pattern, repl in self.location_regex_subs:
+            text = re.sub(pattern, repl, text)
+        text = text.strip()
+        return text or None
+
+    def _attach_osm(self, adapter: ItemAdapter, spider=None) -> None:
+        location = adapter.get('location')
+        if not location:
+            return
+        try:
+            osm_location = query_location(location)
+            adapter['osm_id'] = osm_location.get('osm_id')
+            adapter['lon'] = osm_location.get('lon')
+            adapter['lat'] = osm_location.get('lat')
+        except Exception as e:
+            self.osm_failures += 1
+            if spider:
+                spider.logger.warning(f"OSM lookup failed for location '{location}': {e}")
+                raise DropItem(f"OSM lookup failed for location '{location}': {e}")
+            else:
+                import logging
+                logging.getLogger(__name__).warning(f"OSM lookup failed for location '{location}': {e}")
+                raise DropItem(f"OSM lookup failed for location '{location}': {e}")
+
+
+    def close_spider(self, spider):
+        if self.osm_failures > 0:
+            spider.logger.info(f"BaseCleaningPipeline: {self.osm_failures} OSM lookup failures")
+
+
+class WillhabenPipeline(BaseCleaningPipeline):
+    location_regex_subs = (
+        (r"\d+\. Bezirk,\s*", ""),
+    )
+
+    def process_item(self, item, spider):  
         if not isinstance(item, WillhabenItem):
             return item
 
         adapter = ItemAdapter(item)
-
-        adapter['size_m2'] = self._to_float(adapter.get('raw_size'))
-        adapter['rooms'] = self._to_int(adapter.get('rooms'))
-
-        price_raw = adapter.get('price_raw')
-
-        adapter['price_eur'] = self._parse_price(price_raw)
-        #remove the Bezirk from the current location
-
-        adapter['location'] = self._parse_location(adapter.get('location'))
-
-        osmLocation = query_location(adapter['location'])
-
-        adapter['osm_id'] = osmLocation.get('osm_id')
-        adapter['lon'] = osmLocation.get('lon')
-        adapter['lat'] = osmLocation.get('lat')
-
+        self._normalize_common(adapter, spider)
         return item
-    
-    def _to_float(self, value):
-        if value is None:
-            return None
-        if isinstance(value, (int, float)):
-            return float(value)
-
-        text = str(value).strip()
-        if not text:
-            return None
-        # remove thousand separators, handle European decimal
-        text = text.replace('.', '').replace(' ', '')
-        text = text.replace(',', '.')
-
-        try:
-            return float(text)
-        except ValueError:
-            return None
-        
-
-    def _to_int(self, value):
-        if value is None:
-            return None
-        if isinstance(value, int):
-            return value
-        text = str(value).strip()
-        if not text:
-            return None
-        try:
-            return int(float(text))
-        except ValueError:
-            return None
-
-    def _parse_price(self, value):
-        if value is None:
-            return None
-        text = str(value).strip()
-        # keep only digits, dots and commas
-        text = re.sub(r'[^\d\.,]', '', text)
-        # remove thousand separators (dots/spaces), keep comma as decimal
-        text = text.replace('.', '').replace(' ', '')
-
-        # change comma to dot for decimal
-        text = text.replace(',', '.')
-
-        if not text:
-            return None
-        try:
-            return float(text)
-        except ValueError:
-            return None
 
 
-    def _parse_location(self, value):
-        if value is None:
-            return None
-        value = str(value).strip()
-        value = value.replace('"', '')
-        value = re.sub(r"\d+\. Bezirk,\s*", "", value)
+class ImmoscoutPipeline(BaseCleaningPipeline):
+    location_regex_subs = (
+        (r"Wien.*", "Wien"),
+    )
 
-        if value == '':
-            return None
-        return value
-    
-
-class ImmoscoutPipeline:
-    async def process_item(self, item, spider):
+    async def process_item(self, item, spider):  
         if not isinstance(item, ImmoscoutItem):
             return item
 
         adapter = ItemAdapter(item)
-
-        adapter['size_m2'] = self._to_float(adapter.get('raw_size'))
-        adapter['rooms'] = self._to_float_rooms(adapter.get('raw_rooms'))
-        price_raw = adapter.get('price_raw')
-        adapter['price_eur'] = self._parse_price(price_raw)
-        #removes the Bezirk name from the location
-        adapter['location'] = self._parse_location(adapter.get('location'))
-
-        osmLocation = query_location(adapter['location'])
-
-        adapter['osm_id'] = osmLocation.get('osm_id')
-        adapter['lon'] = osmLocation.get('lon')
-        adapter['lat'] = osmLocation.get('lat')
-
+        self._normalize_common(adapter)
         return item
-    
-    def _to_float(self, value):
-        if value is None:
-            return None
-        if isinstance(value, (int, float)):
-            return float(value)
-
-        text = str(value).strip()
-        if not text:
-            return None
-        # remove thousand separators, handle European decimal
-        text = text.replace(' m²', '')
-        text = text.replace('.', '').replace(' ', '')
-        text = text.replace(',', '.')
-
-        try:
-            return float(text)
-        except ValueError:
-            return None
-        
-
-    def _to_float_rooms(self, value):
-        if value is None:
-            return None
-        if isinstance(value, float):
-            return value
-        text = str(value).strip()
-        text = text.replace(' Zimmer', '')
-        if not text:
-            return None
-        try:
-            return float(text)
-        except ValueError:
-            return None
-
-    def _parse_price(self, value):
-        if value is None:
-            return None
-        text = str(value).strip()
-        # keep only digits, dots and commas -- removes currency symbol and spaces
-        text = re.sub(r'[^\d\.,]', '', text)
-        # remove thousand separators (dots/spaces), keep comma as decimal
-        text = text.replace('.', '').replace(' ', '')
-
-        # change comma to dot for decimal
-        text = text.replace(',', '.')
-
-        if not text:
-            return None
-        try:
-            return float(text)
-        except ValueError:
-            return None
-
-
-    def _parse_location(self, value):
-        if value is None:
-            return None
-        value = str(value).strip()
-        value = value.replace('"', '')
-        #remove everything after Wien, 
-        value = re.sub(r"Wien.*", "Wien", value)
-
-        if value == '':
-            return None
-        return value
 
 class Neo4jPipeline:
     """Writes listing items to Neo4j using parameterized Cypher with batching."""

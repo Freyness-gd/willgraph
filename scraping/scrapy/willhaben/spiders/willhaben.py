@@ -17,6 +17,8 @@ class WillhabenSpider(scrapy.Spider):
         },
         "ITEM_PIPELINES": {
             "willhaben.pipelines.WillhabenPipeline": 300,
+            "willhaben.pipelines.ValidationPipeline": 350,  # runs after cleaning
+            "willhaben.pipelines.DeduplicationPipeline": 375,  # runs after cleaning
             "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
 
         }
@@ -68,7 +70,7 @@ class WillhabenSpider(scrapy.Spider):
                 title=title,
                 location=location,
                 raw_size=size_text,
-                rooms=rooms,
+                raw_rooms=rooms,
                 price_raw=price_raw,
                 scraped_at=scraped_at
             )

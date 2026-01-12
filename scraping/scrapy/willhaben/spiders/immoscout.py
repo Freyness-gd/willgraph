@@ -20,6 +20,8 @@ class ImmoscoutSpider(scrapy.Spider):
         },
         "ITEM_PIPELINES": {
             "willhaben.pipelines.ImmoscoutPipeline": 300,
+            "willhaben.pipelines.ValidationPipeline": 350,  # runs after cleaning
+            "willhaben.pipelines.DeduplicationPipeline": 375,  # runs after cleaning
             "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
         }
     }

@@ -17,7 +17,7 @@ def query_location(location):
     #url_encoded_location = urllib.parse.quote(location)
     params = {
         "q": location,
-        "email": "isminetrash@gmail.com",
+        "email": "e12121286@student.tuwien.ac.at",
         "limit": 1,
         "format": "jsonv2"
     }
