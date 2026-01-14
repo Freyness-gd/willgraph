@@ -75,12 +75,19 @@ class ValidationPipeline:
             return 'dropped_missing_title'
         if not location or not str(location).strip():
             return 'dropped_missing_location'
-
-        # Normalized numeric bounds (only validate if present)
+        
+        if price is  None:
+            return 'dropped_price_none'
+        if size is None:
+            return 'dropped_size_none'
+        if rooms is None:
+            return 'dropped_rooms_none'
+        
+        # Normalized numeric bounds (will anyways only be validated if not none)
         if price is not None and not (MIN_PRICE_EUR <= price <= MAX_PRICE_EUR):
             return 'dropped_price_out_of_bounds'
 
-        if size is not None and not (MIN_SIZE_M2 <= size <= MAX_SIZE_M2):
+        if size is not None and not  (MIN_SIZE_M2 <= size <= MAX_SIZE_M2):
             return 'dropped_size_out_of_bounds'
 
         if rooms is not None and not (self.MIN_ROOMS <= rooms <= self.MAX_ROOMS):
@@ -254,7 +261,7 @@ class WillhabenPipeline(BaseCleaningPipeline):
     location_regex_subs = (
         (r"\d+\. Bezirk,\s*", ""),
         (r"\b(Top|Tür|Stiege)\s+\d+\b", ""),
-        (r"\bNähe\b", "")
+        (r"\bNähe\b", "") #this may be overfitting
     )
 
     def process_item(self, item, spider):  
@@ -276,6 +283,15 @@ class ImmoscoutPipeline(BaseCleaningPipeline):
             return item
 
         adapter = ItemAdapter(item)
+        
+        # Clean title: replace newlines, carriage returns, and tabs with two spaces
+        title = adapter.get('title')
+        if title:
+            cleaned_title = re.sub(r'[\r\n\t]+', '  ', str(title))
+            cleaned_title = re.sub(r' {3,}', '  ', cleaned_title)
+            cleaned_title = cleaned_title.strip()
+            adapter['title'] = cleaned_title
+        
         self._normalize_common(adapter)
         return item
 

@@ -61,6 +61,6 @@ class WillhabenItem(BaseListingItem):
 class ImmoscoutItem(BaseListingItem):
     """Immoscout listing with the unified schema used across sources."""
 
-    raw_ul: Optional[bool] = None  # flag for multi-unit listings
+    mega_listing: Optional[bool] = None  # flag for multi-unit listings
     source: str = field(init=False, default="immoscout")
 

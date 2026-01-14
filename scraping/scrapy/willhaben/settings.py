@@ -40,7 +40,7 @@ SCRAPE_LONG_DELAY = 300
 
 # If you keep DOWNLOAD_DELAY, it will be combined with the middleware delay.
 # Set DOWNLOAD_DELAY to 0 if you want only the middleware delays to apply.
-DOWNLOAD_DELAY = 2
+DOWNLOAD_DELAY = 3
 
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
