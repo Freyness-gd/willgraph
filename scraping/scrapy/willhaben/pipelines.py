@@ -179,8 +179,9 @@ class BaseCleaningPipeline:
         adapter['size_m2'] = self._to_float(adapter.get('raw_size'), drop_tokens=('m²', 'm2', ' m²'))
         adapter['rooms'] = self._to_float(adapter.get('raw_rooms'), drop_tokens=('Zimmer',))
         adapter['price_eur'] = self._parse_price(adapter.get('price_raw'))
-        adapter['location'] = self._parse_location(adapter.get('location'))
-        self._attach_osm(adapter, spider)
+        if(adapter.get('osm_id') is None or adapter.get('lat') is None or adapter.get('lon') is None):
+            adapter['location'] = self._parse_location(adapter.get('location'))
+            self._attach_osm(adapter, spider)
 
     def _to_float(self, value, drop_tokens: Iterable[str] = ()):  
         if value is None:
@@ -227,20 +228,21 @@ class BaseCleaningPipeline:
         location = adapter.get('location')
         if not location:
             return
-        try:
-            osm_location = query_location(location)
-            adapter['osm_id'] = osm_location.get('osm_id')
-            adapter['lon'] = osm_location.get('lon')
-            adapter['lat'] = osm_location.get('lat')
-        except Exception as e:
-            self.osm_failures += 1
-            if spider:
-                spider.logger.warning(f"OSM lookup failed for location '{location}': {e}")
-                raise DropItem(f"OSM lookup failed for location '{location}': {e}")
-            else:
-                import logging
-                logging.getLogger(__name__).warning(f"OSM lookup failed for location '{location}': {e}")
-                raise DropItem(f"OSM lookup failed for location '{location}': {e}")
+        if(not adapter.get('osm_id') or not adapter.get('lat') or not adapter.get('lon')):
+            try:
+                osm_location = query_location(location)
+                adapter['osm_id'] = osm_location.get('osm_id')
+                adapter['lon'] = osm_location.get('lon')
+                adapter['lat'] = osm_location.get('lat')
+            except Exception as e:
+                self.osm_failures += 1
+                if spider:
+                    spider.logger.warning(f"OSM lookup failed for location '{location}': {e}")
+                    raise DropItem(f"OSM lookup failed for location '{location}': {e}")
+                else:
+                    import logging
+                    logging.getLogger(__name__).warning(f"OSM lookup failed for location '{location}': {e}")
+                    raise DropItem(f"OSM lookup failed for location '{location}': {e}")
 
 
     def close_spider(self, spider):
