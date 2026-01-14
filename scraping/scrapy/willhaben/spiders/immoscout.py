@@ -21,8 +21,11 @@ class ImmoscoutSpider(scrapy.Spider):
         "ITEM_PIPELINES": {
             "willhaben.pipelines.ImmoscoutPipeline": 300,
             "willhaben.pipelines.ValidationPipeline": 350,  # runs after cleaning
-            "willhaben.pipelines.DeduplicationPipeline": 375,  # runs after cleaning
+            "willhaben.pipelines.DeduplicationPipeline": 375,  
             "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
+        },
+        "PLAYWRIGHT_LAUNCH_OPTIONS": {
+            "headless": False,  
         }
     }
     slow_scroll = """
@@ -109,7 +112,6 @@ class ImmoscoutSpider(scrapy.Spider):
                     )
 
                     #if listing has a div with ul then make has ul true this means its a listing for a building with multiple apartments
-                    #TODO make sure when data cleaning that the mega listings are handled properly
                     if has_section and not has_children: 
                         url = response.urljoin(link.attrib.get("href"))
                         
@@ -141,6 +143,8 @@ class ImmoscoutSpider(scrapy.Spider):
                             price_raw=price,
                             scraped_at=scraped_at
                         )
+                    #TODO parse mega listing elif has_children: 
+                        
         next_button = response.css('a[aria-label="weiter"]::attr(href)').get()
         self.logger.info(
                         "ul_count=%s",

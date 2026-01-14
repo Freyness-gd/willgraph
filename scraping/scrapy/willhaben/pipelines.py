@@ -251,6 +251,8 @@ class BaseCleaningPipeline:
 class WillhabenPipeline(BaseCleaningPipeline):
     location_regex_subs = (
         (r"\d+\. Bezirk,\s*", ""),
+        (r"\b(Top|Tür|Stiege)\s+\d+\b", ""),
+        (r"\bNähe\b", "")
     )
 
     def process_item(self, item, spider):  

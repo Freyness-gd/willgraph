@@ -48,7 +48,7 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 
 PLAYWRIGHT_LAUNCH_OPTIONS = {
-    "headless": False,     # important
+    "headless": True,     # default for all spiders
 }
 
 PLAYWRIGHT_BROWSER_CONTEXTS = {

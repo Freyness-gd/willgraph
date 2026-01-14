@@ -3,6 +3,7 @@ import time
 import scrapy
 import datetime
 from willhaben.items import WillhabenItem
+from scrapy_playwright.page import PageMethod
 
 class WillhabenSpider(scrapy.Spider):
     name = "willhaben"
@@ -19,17 +20,48 @@ class WillhabenSpider(scrapy.Spider):
             "willhaben.pipelines.WillhabenPipeline": 300,
             "willhaben.pipelines.ValidationPipeline": 350,  # runs after cleaning
             "willhaben.pipelines.DeduplicationPipeline": 375,  # runs after cleaning
-            "willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
+            #"willhaben.pipelines.Neo4jPipeline": 400, #first 300 is done then 400 as 400 > 300
 
         }
     }
+
+    slow_scroll = """
+                        () => new Promise(resolve => {
+                            const distance = 600;
+                            const delay = 400;
+                            const maxSteps = 50;
+                            let steps = 0;
+
+                            const timer = setInterval(() => {
+                                window.scrollBy(0, distance);
+                                steps += 1;
+
+                                const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight;
+                                if (atBottom || steps >= maxSteps) {
+                                    clearInterval(timer);
+                                    resolve();
+                                }
+                            }, delay);
+                        })
+                        """
 
     async def start(self):
         urls = [
             "https://www.willhaben.at/iad/immobilien/mietwohnungen/wien",
         ]
         for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse)
+            yield scrapy.Request(url=url, callback=self.parse,
+                meta={
+                "playwright": True,
+                "playwright_context": "extra",
+                "playwright_page_methods": [
+                    PageMethod(
+                        "evaluate",
+                        self.slow_scroll
+                    ),
+                    PageMethod("wait_for_timeout", 2000),
+                ],
+            })
 
     def parse(self, response):
         for dataEntry in response.css('a[id^="search-result-entry-header-"]'):
