@@ -1,5 +1,4 @@
 import csv
-
 import pandas as pd
 import numpy as np
 import zipfile
@@ -11,6 +10,7 @@ import shutil
 import requests
 import logging
 import sys
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -21,9 +21,12 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger(__name__)
+
 BASE_DIR = './gtfs_data'
-OUTPUT_NODES = 'transport_nodes.csv'
-OUTPUT_EDGES = 'transport_edges.csv'
+OUTPUT_NODES = os.path.join(BASE_DIR, 'transport_nodes.csv')
+OUTPUT_EDGES = os.path.join(BASE_DIR, 'transport_edges.csv')
+STATE_FILE = os.path.join(BASE_DIR, 'download_state.json')
+
 DBP_USERNAME = os.getenv("DBP_USERNAME", "")
 DBP_PASSWORD = os.getenv("DBP_PASSWORD", "")
 
@@ -42,6 +45,24 @@ class DBPClient:
         self.username = username
         self.password = password
         self.token = None
+        self.state = self.load_state()
+        self.updates_count = 0
+
+    def load_state(self):
+        """Loads the local state of downloaded files."""
+        if os.path.exists(STATE_FILE):
+            try:
+                with open(STATE_FILE, 'r') as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
+
+    def save_state(self):
+        """Saves the current state to disk."""
+        os.makedirs(BASE_DIR, exist_ok=True)
+        with open(STATE_FILE, 'w') as f:
+            json.dump(self.state, f, indent=2)
 
     def authenticate(self):
         logger.info("Authenticating with DBP...")
@@ -80,13 +101,12 @@ class DBPClient:
             return
 
         current_year = str(datetime.now().year)
-        download_count = 0
 
         for ds in datasets:
             ds_name = ds.get('nameDe', '') or ds.get('name', '')
-            ds_id = ds.get('id')
+            ds_id = str(ds.get('id'))
 
-            #Exclusion properties
+            #Exclusion
             if "flex" in ds_name.lower():
                 logger.info(f"Skipping (Excluded Name): {ds_name}")
                 continue
@@ -97,71 +117,64 @@ class DBPClient:
 
             tags = ds.get('tags', [])
             tag_values = [t.get('valueDe', '') for t in tags] + [t.get('valueEn', '') for t in tags]
+
             is_regional = any(state.lower() in ds_name.lower() for state in AUSTRIAN_STATES) or \
                           any(state in tag_val for state in AUSTRIAN_STATES for tag_val in tag_values)
             if is_regional:
-                logger.info(f"Found Match: {ds_name} (ID: {ds_id})")
-                self.download_and_extract(ds_id, ds_name, current_year, output_base_dir)
-                download_count += 1
-            else:
-                pass
+                active_versions = ds.get('activeVersions', [])
+                if not active_versions:
+                    logger.warning(f"  Skipping {ds_name} (No active version found)")
+                    continue
+                latest_version_obj = active_versions[0].get('dataSetVersion', {})
+                remote_version_id = str(latest_version_obj.get('id'))
+                if not remote_version_id:
+                    logger.warning(f"  Skipping {ds_name} (Missing version ID)")
+                    continue
+                self.download_and_extract(ds_id, ds_name, current_year, output_base_dir, remote_version_id)
 
-        logger.info(f"Finished. Downloaded/Updated {download_count} datasets.")
+        logger.info(f"Sync finished. Total updates applied: {self.updates_count}")
+        return self.updates_count
 
-    def download_and_extract(self, ds_id, dataset_name, current_year, output_base_dir):
+    def download_and_extract(self, ds_id, dataset_name, current_year, output_base_dir, remote_version_id):
         clean_name = re.sub(r'[^a-zA-Z0-9]', '_', dataset_name)
         target_dir = os.path.join(output_base_dir, f"{ds_id}_{clean_name}")
-        if os.path.exists(target_dir):
-            shutil.rmtree(target_dir)
-        os.makedirs(target_dir, exist_ok=True)
+
+        local_version_id = self.state.get(ds_id)
+        if local_version_id == remote_version_id and os.path.exists(target_dir):
+            logger.info(f"  ID {ds_id}: Up to date (Version {remote_version_id}). Skipping.")
+            return
+
+        logger.info(f"  ID {ds_id}: Update found (v{local_version_id} -> v{remote_version_id}). Downloading...")
         url = f"{API_BASE_URL}/{ds_id}/{current_year}/file"
-        temp_zip_path = os.path.join(target_dir, "temp_gtfs.zip")
+        temp_zip_path = os.path.join(output_base_dir, "temp_gtfs.zip")
+        os.makedirs(output_base_dir, exist_ok=True)
         try:
             headers = self.get_headers()
             headers['Accept'] = 'application/zip'
             logger.info(f"  Downloading ID {ds_id} (Streaming to disk)...")
             with requests.get(url, headers=headers, stream=True, verify=False, timeout=60) as response:
-                response = requests.get(url, headers=headers, stream=True, verify=False)
-                if response.status_code == 404:
-                    logger.warning(f"  Warning: No data found for year {current_year}.")
-                    return
                 response.raise_for_status()
-
                 with open(temp_zip_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
                             f.write(chunk)
 
+            if os.path.exists(target_dir):
+                shutil.rmtree(target_dir)
+            os.makedirs(target_dir, exist_ok=True)
+
             logger.info(f"  Extracting {temp_zip_path}...")
             with zipfile.ZipFile(temp_zip_path, 'r') as z:
                 z.extractall(target_dir)
+
             os.remove(temp_zip_path)
-            logger.info(f"  Extracted to: {target_dir}")
+            self.state[ds_id] = remote_version_id
+            self.save_state()
+            self.updates_count += 1
         except Exception as e:
             logger.error(f"  Failed to download ID {ds_id}: {e}")
             if os.path.exists(temp_zip_path):
                 os.remove(temp_zip_path)
-
-    def download_dataset(self, dataset_id, year, output_folder):
-        """Downloads and extracts the dataset for a specific year."""
-        if not self.token: return
-
-        url = f"{API_BASE_URL}/{dataset_id}/{year}/file"
-        print(f"Downloading dataset {dataset_id} for year {year}...")
-
-        try:
-            headers = self.get_headers()
-            headers['Accept'] = 'application/zip'
-            response = requests.get(url, headers=headers, stream=True, verify=False)
-            response.raise_for_status()
-
-            # Extract in memory
-            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-                z.extractall(output_folder)
-            print(f"Extracted to {output_folder}")
-
-        except Exception as e:
-            print(f"Failed to download/extract: {e}")
 
 def fetch_data_from_api():
     if not DBP_USERNAME or "EXAMPLE.COM" in DBP_USERNAME:
@@ -174,7 +187,8 @@ def fetch_data_from_api():
     if not client.token:
         sys.exit(1)
 
-    client.sync_regional_gtfs(BASE_DIR)
+    updates_found = client.sync_regional_gtfs(BASE_DIR)
+    return updates_found
 
 
 def parse_gtfs_time(time_str):
@@ -187,7 +201,16 @@ def parse_gtfs_time(time_str):
         return None
 
 def process_gtfs():
-    fetch_data_from_api()
+    updates_found = fetch_data_from_api()
+    files_exist = os.path.exists(OUTPUT_NODES) and os.path.exists(OUTPUT_EDGES)
+    if updates_found == 0 and files_exist:
+        logger.info("No new datasets found and output files exist. Skipping processing.")
+        sys.exit(0)
+    if updates_found == 0 and not files_exist:
+        logger.info("No updates found, but output files are missing. Regenerating from local GTFS...")
+    else:
+        logger.info("Updates detected.")
+
     logger.info("Loading GTFS data from disk...")
     stop_files = glob.glob(os.path.join(BASE_DIR, '**', 'stops.txt'), recursive=True)
     time_files = glob.glob(os.path.join(BASE_DIR, '**', 'stop_times.txt'), recursive=True)
@@ -200,12 +223,11 @@ def process_gtfs():
 
     logger.info("Loading stops from all sources...")
     stops_cols = ['stop_id', 'stop_name', 'stop_lat', 'stop_lon']
-
     stops_df_list = []
+
     for f in stop_files:
         logger.debug(f"  Reading {f}...")
         try:
-            # Force stop_id to string to avoid mismatches
             df = pd.read_csv(f, usecols=lambda c: c in stops_cols, dtype={'stop_id': str})
             stops_df_list.append(df)
         except Exception as e:
@@ -228,24 +250,20 @@ def process_gtfs():
         dataset_name = os.path.basename(os.path.dirname(f))
         logger.info(f"  Processing routes in {dataset_name}...")
 
-        # Process file-by-file to keep RAM usage low
         try:
             df = pd.read_csv(f, usecols=lambda c: c in time_cols,
                              dtype={'trip_id': str, 'stop_id': str, 'stop_sequence': 'int32'})
+            if df.empty: continue
 
-            # Sort sequence: Trip A -> Stop 1, Stop 2, Stop 3...
             df.sort_values(by=['trip_id', 'stop_sequence'], inplace=True)
 
-            # Shift to get Target Node
             df['next_stop_id'] = df['stop_id'].shift(-1)
             df['next_trip_id'] = df['trip_id'].shift(-1)
             df['next_arrival_time'] = df['arrival_time'].shift(-1)
 
-            # Filter valid connections (Same Trip Only)
             valid = df[df['trip_id'] == df['next_trip_id']].copy()
             del df  # Free RAM
 
-            # Calculate Times
             valid['dep_min'] = valid['departure_time'].apply(parse_gtfs_time)
             valid['arr_min'] = valid['next_arrival_time'].apply(parse_gtfs_time)
             valid['duration'] = valid['arr_min'] - valid['dep_min']
