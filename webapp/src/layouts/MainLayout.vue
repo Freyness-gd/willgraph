@@ -35,8 +35,136 @@
 			</q-toolbar>
 		</q-header>
 
-		<!-- Municipalities List Panel -->
-		<div class="municipalities-panel">
+		<!-- Estate Overview Card -->
+		<div v-if="geoStore.selectedEstate" class="estate-overview-card">
+			<div class="estate-header">
+				<q-icon class="estate-icon" color="primary" name="home" size="24px" />
+				<span class="estate-title">{{ geoStore.selectedEstate.title || "Untitled Property" }}</span>
+				<q-btn color="negative" dense flat icon="close" round size="sm" @click="closeEstateOverview">
+					<q-tooltip>Close</q-tooltip>
+				</q-btn>
+			</div>
+			<div class="estate-content">
+				<!-- Price Info -->
+				<div v-if="geoStore.selectedEstate.price != null" class="estate-row">
+					<q-icon name="euro" size="16px" />
+					<span class="estate-label">Price:</span>
+					<span class="estate-value price">{{ formatPrice(geoStore.selectedEstate.price) }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.pricePerM2 != null" class="estate-row">
+					<q-icon name="square_foot" size="16px" />
+					<span class="estate-label">Price/m²:</span>
+					<span class="estate-value">{{ formatPrice(geoStore.selectedEstate.pricePerM2) }}</span>
+				</div>
+
+				<!-- Area Info -->
+				<div v-if="geoStore.selectedEstate.livingArea != null" class="estate-row">
+					<q-icon name="straighten" size="16px" />
+					<span class="estate-label">Living Area:</span>
+					<span class="estate-value">{{ formatArea(geoStore.selectedEstate.livingArea) }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.totalArea != null" class="estate-row">
+					<q-icon name="crop_free" size="16px" />
+					<span class="estate-label">Total Area:</span>
+					<span class="estate-value">{{ formatArea(geoStore.selectedEstate.totalArea) }}</span>
+				</div>
+
+				<!-- Room Info -->
+				<div v-if="geoStore.selectedEstate.roomCount != null" class="estate-row">
+					<q-icon name="meeting_room" size="16px" />
+					<span class="estate-label">Rooms:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.roomCount }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.bedroomCount != null" class="estate-row">
+					<q-icon name="bed" size="16px" />
+					<span class="estate-label">Bedrooms:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.bedroomCount }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.bathroomCount != null" class="estate-row">
+					<q-icon name="bathtub" size="16px" />
+					<span class="estate-label">Bathrooms:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.bathroomCount }}</span>
+				</div>
+
+				<!-- Address Info -->
+				<div v-if="hasAddressInfo" class="estate-divider"></div>
+				<div v-if="geoStore.selectedEstate.address?.fullAddressString" class="estate-row">
+					<q-icon name="location_on" size="16px" />
+					<span class="estate-label">Address:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.address.fullAddressString }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.address?.street" class="estate-row">
+					<q-icon name="signpost" size="16px" />
+					<span class="estate-label">Street:</span>
+					<span class="estate-value"
+						>{{ geoStore.selectedEstate.address.street }} {{ geoStore.selectedEstate.address?.houseNumber || "" }}</span
+					>
+				</div>
+				<div v-if="geoStore.selectedEstate.address?.city" class="estate-row">
+					<q-icon name="location_city" size="16px" />
+					<span class="estate-label">City:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.address.city }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.address?.postalCode" class="estate-row">
+					<q-icon name="markunread_mailbox" size="16px" />
+					<span class="estate-label">Postal Code:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.address.postalCode }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.address?.countryCode" class="estate-row">
+					<q-icon name="flag" size="16px" />
+					<span class="estate-label">Country:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.address.countryCode }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.address?.distanceToNearestStation != null" class="estate-row">
+					<q-icon name="directions_transit" size="16px" />
+					<span class="estate-label">Nearest Station:</span>
+					<span class="estate-value">{{
+						formatDistance(geoStore.selectedEstate.address.distanceToNearestStation)
+					}}</span>
+				</div>
+
+				<!-- Source Info -->
+				<div
+					v-if="geoStore.selectedEstate.source || geoStore.selectedEstate.timestampFound"
+					class="estate-divider"
+				></div>
+				<div v-if="geoStore.selectedEstate.source" class="estate-row">
+					<q-icon name="source" size="16px" />
+					<span class="estate-label">Source:</span>
+					<span class="estate-value">{{ geoStore.selectedEstate.source }}</span>
+				</div>
+				<div v-if="geoStore.selectedEstate.timestampFound" class="estate-row">
+					<q-icon name="schedule" size="16px" />
+					<span class="estate-label">Found:</span>
+					<span class="estate-value">{{ formatDate(geoStore.selectedEstate.timestampFound) }}</span>
+				</div>
+
+				<!-- External Link -->
+				<div v-if="geoStore.selectedEstate.externalUrl" class="estate-row estate-link">
+					<q-icon name="link" size="16px" />
+					<a :href="geoStore.selectedEstate.externalUrl" target="_blank">View Original Listing ↗</a>
+				</div>
+
+				<!-- Tools Section -->
+				<div class="estate-tools">
+					<div class="tools-header">Tools</div>
+					<div class="tools-buttons">
+						<q-btn color="primary" dense icon="directions_bus" outline @click="onTransportTool">
+							<q-tooltip>Transport in the area</q-tooltip>
+						</q-btn>
+						<q-btn color="primary" dense icon="storefront" outline @click="onAmenitiesTool">
+							<q-tooltip>Amenities in the area</q-tooltip>
+						</q-btn>
+						<q-btn color="primary" dense icon="place" outline @click="onPoiDistanceTool">
+							<q-tooltip>POI distance</q-tooltip>
+						</q-btn>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Municipalities List Panel - Hidden when estate is selected -->
+		<div v-if="!geoStore.selectedEstate" class="municipalities-panel">
 			<div class="panel-header">
 				<q-icon class="panel-icon" name="location_city" size="24px" />
 				<span class="panel-title">Municipalities</span>
@@ -161,6 +289,19 @@ const searchIconVisibility = computed(() => {
 	return !search.value || search.value.length === 0;
 });
 
+const hasAddressInfo = computed(() => {
+	const address = geoStore.selectedEstate?.address;
+	if (!address) return false;
+	return (
+		address.fullAddressString ||
+		address.street ||
+		address.city ||
+		address.postalCode ||
+		address.countryCode ||
+		address.distanceToNearestStation != null
+	);
+});
+
 const searchResults = computed(() => {
 	if (!search.value || search.value.length < 3) {
 		return [];
@@ -266,9 +407,182 @@ const transportButtonTooltip = computed(() => {
 const toggleTransportMarker = () => {
 	geoStore.toggleTransportMarkerMode();
 };
+
+// Estate overview methods
+const closeEstateOverview = () => {
+	geoStore.clearSelectedEstate();
+};
+
+// Format helpers
+const formatPrice = (value: number | null | undefined): string => {
+	if (value === null || value === undefined) return "None";
+	return `€${value.toLocaleString()}`;
+};
+
+const formatArea = (value: number | null | undefined): string => {
+	if (value === null || value === undefined) return "None";
+	return `${value}m²`;
+};
+
+const formatDistance = (value: number | null | undefined): string => {
+	if (value === null || value === undefined) return "None";
+	return `${Math.round(value)}m`;
+};
+
+const formatDate = (value: string | null | undefined): string => {
+	if (!value) return "None";
+	try {
+		return new Date(value).toLocaleDateString();
+	} catch {
+		return value;
+	}
+};
+
+// Tool button handlers (placeholder implementations)
+const onTransportTool = () => {
+	console.log("Transport in the area tool clicked");
+	// TODO: Implement transport search around estate location
+};
+
+const onAmenitiesTool = () => {
+	console.log("Amenities in the area tool clicked");
+	// TODO: Implement amenities search around estate location
+};
+
+const onPoiDistanceTool = () => {
+	console.log("POI distance tool clicked");
+	// TODO: Implement POI distance calculation
+};
 </script>
 
 <style scoped>
+/* Estate Overview Card */
+.estate-overview-card {
+	position: fixed;
+	top: 80px;
+	left: 20px;
+	z-index: 1001;
+	padding: 16px;
+	background-color: rgba(255, 255, 255, 0.95);
+	border-radius: 8px;
+	backdrop-filter: blur(4px);
+	min-width: 300px;
+	max-width: 340px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	max-height: calc(100vh - 200px);
+	overflow-y: auto;
+}
+
+.estate-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #1976d2;
+}
+
+.estate-icon {
+	flex-shrink: 0;
+}
+
+.estate-title {
+	flex: 1;
+	font-weight: 600;
+	font-size: 14px;
+	color: #333;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.estate-content {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.estate-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+}
+
+.estate-row .q-icon {
+	color: #666;
+	flex-shrink: 0;
+}
+
+.estate-label {
+	color: #666;
+	min-width: 100px;
+	flex-shrink: 0;
+}
+
+.estate-value {
+	color: #333;
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.estate-value.price {
+	color: #1976d2;
+	font-weight: 700;
+	font-size: 14px;
+}
+
+.estate-divider {
+	height: 1px;
+	background-color: #e0e0e0;
+	margin: 6px 0;
+}
+
+.estate-link {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid #e0e0e0;
+}
+
+.estate-link a {
+	color: #1976d2;
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.estate-link a:hover {
+	text-decoration: underline;
+}
+
+/* Estate Tools Section */
+.estate-tools {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 2px solid #1976d2;
+}
+
+.tools-header {
+	font-size: 12px;
+	font-weight: 600;
+	color: #666;
+	margin-bottom: 8px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.tools-buttons {
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+}
+
+.tools-buttons .q-btn {
+	flex: 1;
+}
+
+/* Municipalities Panel */
 .municipalities-panel {
 	position: fixed;
 	top: 80px;

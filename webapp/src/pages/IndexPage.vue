@@ -1,6 +1,6 @@
 <template>
 	<div class="index-page">
-		<leaflet-map ref="leafletMapRef" @map-click="handleMapClick"></leaflet-map>
+		<leaflet-map ref="leafletMapRef" @map-click="handleMapClick" @estate-select="handleEstateSelect"></leaflet-map>
 		<map-overlay-form ref="overlayFormRef" @poi-mode-changed="handlePoiModeChanged" @poi-removed="handlePoiRemoved" />
 	</div>
 </template>
@@ -11,11 +11,18 @@ import LeafletMap from "components/LeafletMap.vue";
 import MapOverlayForm from "components/MapOverlayForm.vue";
 import { useGeoStore } from "stores/geoStore";
 import type { Point } from "src/types/Point";
+import type { RealEstateDto } from "src/types/RealEstate";
 
 const geoStore = useGeoStore();
 const leafletMapRef = ref<InstanceType<typeof LeafletMap> | null>(null);
 const overlayFormRef = ref<InstanceType<typeof MapOverlayForm> | null>(null);
 const isPoiModeActive = ref(false);
+
+// Handle estate selection from popup
+const handleEstateSelect = (estate: RealEstateDto) => {
+	console.log("Estate selected:", estate);
+	geoStore.selectEstate(estate);
+};
 
 // Handle map click - add POI if mode is active, or place transport marker
 const handleMapClick = async (lat: number, lon: number) => {
@@ -61,9 +68,14 @@ watch(
 			return;
 		}
 
+		// Always clear existing points first, then draw new ones if any
+		leafletMapRef.value.clearPoints?.();
+
 		if (newPoints && newPoints.length > 0) {
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
+		} else {
+			console.log("No heat points to draw, map cleared");
 		}
 	},
 	{ deep: true }

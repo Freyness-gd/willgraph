@@ -23,6 +23,7 @@ export const useGeoStore = defineStore("geoStore", {
 		}>,
 		regionHeatPoints: [] as [number, number][],
 		regionEstatesMap: new Map<string, RealEstateDto[]>(),
+		selectedEstate: null as RealEstateDto | null,
 		stationMarkers: [] as StationDistanceDto[],
 		transportMarker: null as { lat: number; lon: number; radius: number } | null,
 		transportMarkerModeActive: false,
@@ -201,6 +202,14 @@ export const useGeoStore = defineStore("geoStore", {
 			this.transportMarker = null;
 			this.transportMarkerModeActive = false;
 			this.stationMarkers = [];
+		},
+		// Select an estate for detailed view
+		selectEstate(estate: RealEstateDto) {
+			this.selectedEstate = estate;
+		},
+		// Clear selected estate
+		clearSelectedEstate() {
+			this.selectedEstate = null;
 		},
 		async loadGeoData() {
 			console.log("Loading Vienna districts...");
