@@ -87,6 +87,37 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Transport Button -->
+			<div class="transport-section">
+				<q-btn
+					:color="transportButtonColor"
+					:label="transportButtonLabel"
+					:loading="geoStore.loadingStations"
+					dense
+					icon="directions_bus"
+					@click="toggleTransportMarker"
+				>
+					<q-tooltip>{{ transportButtonTooltip }}</q-tooltip>
+				</q-btn>
+
+				<!-- Radius input - shown only when in placement mode (before marker is placed) -->
+				<div v-if="geoStore.transportMarkerModeActive && !geoStore.transportMarker" class="radius-input">
+					<q-input
+						v-model.number="transportRadius"
+						:rules="[(val) => (val >= 1 && val <= 1000) || 'Max 1000m']"
+						dense
+						label="Radius (m)"
+						outlined
+						style="width: 180px"
+						type="number"
+					>
+						<template v-slot:prepend>
+							<q-icon name="radar" size="xs" />
+						</template>
+					</q-input>
+				</div>
+			</div>
 		</div>
 
 		<q-page-container>
@@ -98,8 +129,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from "vue";
 import { useGeoStore } from "stores/geoStore";
-import type { QInput } from "quasar";
-import { useQuasar } from "quasar";
+import { QInput, useQuasar } from "quasar";
 
 const $q = useQuasar();
 
@@ -111,6 +141,12 @@ const search = ref("");
 const searchMenuOpen = ref(false);
 const searchInput = ref<QInput | null>(null);
 const draggedIndex = ref<number | null>(null);
+
+// Computed for transport radius (bound to store)
+const transportRadius = computed({
+	get: () => geoStore.pendingTransportRadius,
+	set: (val: number) => geoStore.setPendingTransportRadius(val),
+});
 
 // Computed - selectedMunicipalities from store
 const selectedMunicipalities = computed(() => geoStore.selectedMunicipalities);
@@ -183,6 +219,7 @@ const moveMunicipalityDown = (name: string) => {
 const onDragStart = (event: DragEvent, index: number) => {
 	draggedIndex.value = index;
 	if (event.dataTransfer) {
+		// eslint-disable-next-line no-param-reassign
 		event.dataTransfer.effectAllowed = "move";
 		event.dataTransfer.setData("text/plain", index.toString());
 	}
@@ -205,6 +242,29 @@ const onDrop = (event: DragEvent, dropIndex: number) => {
 
 const onDragEnd = () => {
 	draggedIndex.value = null;
+};
+
+// Transport marker computed properties
+const transportButtonColor = computed(() => {
+	if (geoStore.transportMarker) return "negative"; // Red when marker is placed (click to remove)
+	if (geoStore.transportMarkerModeActive) return "warning"; // Orange when in placement mode
+	return "primary"; // Blue default
+});
+
+const transportButtonLabel = computed(() => {
+	if (geoStore.transportMarker) return "Remove Marker";
+	if (geoStore.transportMarkerModeActive) return "Click Map...";
+	return "Add Transport";
+});
+
+const transportButtonTooltip = computed(() => {
+	if (geoStore.transportMarker) return "Click to remove transport marker and stations";
+	if (geoStore.transportMarkerModeActive) return "Click on the map to place transport marker";
+	return "Click to enable transport marker placement";
+});
+
+const toggleTransportMarker = () => {
+	geoStore.toggleTransportMarkerMode();
 };
 </script>
 
@@ -309,5 +369,19 @@ const onDragEnd = () => {
 	display: flex;
 	gap: 2px;
 	flex-shrink: 0;
+}
+
+.transport-section {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+}
+
+.radius-input {
+	margin-top: 4px;
 }
 </style>

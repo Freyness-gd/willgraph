@@ -1,8 +1,10 @@
 import { acceptHMRUpdate, defineStore } from "pinia";
 import type { Municipality } from "src/types/Municipality";
 import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
+import type { StationDistanceDto } from "src/types/Station";
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
+import transportService from "src/service/transportService";
 
 const MAX_MUNICIPALITIES = 5;
 
@@ -19,6 +21,11 @@ export const useGeoStore = defineStore("geoStore", {
 			intensity: number;
 		}>,
 		regionHeatPoints: [] as [number, number][],
+		stationMarkers: [] as StationDistanceDto[],
+		transportMarker: null as { lat: number; lon: number; radius: number } | null,
+		transportMarkerModeActive: false,
+		pendingTransportRadius: 100, // Radius to use when placing marker
+		loadingStations: false,
 		loading: false,
 		loaded: false,
 	}),
@@ -92,6 +99,45 @@ export const useGeoStore = defineStore("geoStore", {
 			const points = await regionService.fetchRegionPoints(regionName);
 			console.log("Fetched region points:", points);
 			this.regionHeatPoints = points;
+		},
+		// Transport marker mode - toggle to enable placing a marker on the map
+		toggleTransportMarkerMode() {
+			if (this.transportMarker) {
+				// If marker exists, remove it and clear stations
+				this.clearTransportMarker();
+			} else {
+				// Enable mode to place marker
+				this.transportMarkerModeActive = !this.transportMarkerModeActive;
+			}
+		},
+		// Set transport marker at a specific location and fetch stations
+		async setTransportMarker(lat: number, lon: number) {
+			const radius = this.pendingTransportRadius;
+			this.transportMarkerModeActive = false;
+			this.transportMarker = { lat, lon, radius };
+			this.loadingStations = true;
+			this.stationMarkers = [];
+
+			try {
+				console.log(`Fetching stations at:`, lat, lon, `with radius:`, radius);
+				const stations = await transportService.findNearbyStationsDetailed(lat, lon, radius);
+				this.stationMarkers = stations;
+				console.log("Fetched stations:", stations.length);
+			} catch (error) {
+				console.error("Error fetching nearby stations:", error);
+			} finally {
+				this.loadingStations = false;
+			}
+		},
+		// Set the pending radius for transport marker
+		setPendingTransportRadius(radius: number) {
+			this.pendingTransportRadius = Math.min(Math.max(radius, 1), 1000);
+		},
+		// Clear transport marker and stations
+		clearTransportMarker() {
+			this.transportMarker = null;
+			this.transportMarkerModeActive = false;
+			this.stationMarkers = [];
 		},
 		async loadGeoData() {
 			console.log("Loading Vienna districts...");

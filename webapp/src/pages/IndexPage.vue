@@ -17,8 +17,15 @@ const leafletMapRef = ref<InstanceType<typeof LeafletMap> | null>(null);
 const overlayFormRef = ref<InstanceType<typeof MapOverlayForm> | null>(null);
 const isPoiModeActive = ref(false);
 
-// Handle map click - add POI if mode is active
-const handleMapClick = (lat: number, lon: number) => {
+// Handle map click - add POI if mode is active, or place transport marker
+const handleMapClick = async (lat: number, lon: number) => {
+	// Check if transport marker mode is active
+	if (geoStore.transportMarkerModeActive) {
+		await geoStore.setTransportMarker(lat, lon);
+		return;
+	}
+
+	// Check if POI mode is active
 	if (!isPoiModeActive.value || !overlayFormRef.value) {
 		return;
 	}
@@ -57,6 +64,55 @@ watch(
 		if (newPoints && newPoints.length > 0) {
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
+		}
+	},
+	{ deep: true }
+);
+
+// Watch for stationMarkers changes and draw them on the map
+watch(
+	() => geoStore.stationMarkers,
+	async (newStations) => {
+		console.log("stationMarkers changed:", newStations);
+
+		await nextTick();
+
+		if (!leafletMapRef.value) {
+			console.warn("leafletMapRef is not ready yet");
+			return;
+		}
+
+		// Clear existing station markers first
+		leafletMapRef.value.clearStationMarkers?.();
+
+		if (newStations && newStations.length > 0) {
+			console.log("Drawing station markers on map, count:", newStations.length);
+			leafletMapRef.value.addStationMarkers?.(newStations);
+		}
+	},
+	{ deep: true }
+);
+
+// Watch for transportMarker changes to draw/clear the marker with radius
+watch(
+	() => geoStore.transportMarker,
+	async (newMarker) => {
+		console.log("transportMarker changed:", newMarker);
+
+		await nextTick();
+
+		if (!leafletMapRef.value) {
+			console.warn("leafletMapRef is not ready yet");
+			return;
+		}
+
+		if (newMarker) {
+			// Add transport marker with the stored radius
+			leafletMapRef.value.addTransportMarker?.(newMarker.lat, newMarker.lon, newMarker.radius);
+		} else {
+			// Clear transport marker
+			leafletMapRef.value.clearTransportMarker?.();
+			leafletMapRef.value.clearStationMarkers?.();
 		}
 	},
 	{ deep: true }

@@ -6,6 +6,7 @@ import type { LeafletMouseEvent, Map as LeafletMap } from "leaflet";
 import L from "leaflet";
 import type { Municipality } from "src/types/Municipality";
 import type { Point } from "src/types/Point";
+import type { StationDistanceDto } from "src/types/Station";
 import { useGeoStore } from "stores/geoStore";
 import { municipalitiesToGeoJson } from "src/mapper/MunicipalityMapper";
 
@@ -17,6 +18,13 @@ const zoomRef = ref<number>(12);
 
 // POI Markers storage
 const poiMarkersMap = new Map<string, L.Marker>();
+
+// Station Markers storage
+const stationMarkersMap = new Map<string, L.Marker>();
+
+// Transport marker with radius circle
+let transportMarkerRef: L.Marker | null = null;
+let transportCircleRef: L.Circle | null = null;
 
 const emit = defineEmits<{
 	(e: "map-click", lat: number, lon: number): void;
@@ -264,14 +272,143 @@ const removePoiMarker = (poiId: string) => {
 };
 
 /**
+ * Adds station markers to the map with bus icons and popups
+ * @param stations Array of StationDistanceDto objects
+ */
+const addStationMarkers = (stations: StationDistanceDto[]) => {
+	if (!mapRef.value) {
+		console.warn("Map not ready for station markers");
+		return;
+	}
+
+	// Create custom bus icon
+	const busIcon = L.divIcon({
+		className: "station-marker-icon",
+		html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#4CAF50" width="28" height="28">
+			<path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+		</svg>`,
+		iconSize: [28, 28],
+		iconAnchor: [14, 28],
+		popupAnchor: [0, -28],
+	});
+
+	stations.forEach((station) => {
+		if (!station.location) return;
+
+		const stationKey = `${station.name}-${station.location.latitude}-${station.location.longitude}`;
+
+		// Skip if marker already exists
+		if (stationMarkersMap.has(stationKey)) return;
+
+		const marker = L.marker([station.location.latitude, station.location.longitude], { icon: busIcon });
+
+		// Create popup content with station info
+		const popupContent = `
+			<div style="min-width: 150px;">
+				<strong style="font-size: 14px;">${station.name}</strong><br/>
+				<span style="color: #666;">Type: ${station.type}</span><br/>
+				<span style="color: #666;">Line: ${station.line}</span><br/>
+				<span style="color: #888; font-size: 12px;">${station.distanceInMeters?.toFixed(0) || "N/A"}m • ${station.walkingDurationInMinutes?.toFixed(1) || "N/A"} min</span>
+			</div>
+		`;
+		marker.bindPopup(popupContent);
+
+		marker.addTo(mapRef.value as any);
+		stationMarkersMap.set(stationKey, marker);
+	});
+};
+
+/**
+ * Clears all station markers from the map
+ */
+const clearStationMarkers = () => {
+	if (!mapRef.value) return;
+
+	stationMarkersMap.forEach((marker) => {
+		mapRef.value?.removeLayer(marker);
+	});
+	stationMarkersMap.clear();
+};
+
+/**
+ * Adds a transport marker with a radius circle to the map
+ * @param lat Latitude of the marker
+ * @param lon Longitude of the marker
+ * @param radius Radius in meters (default 100)
+ */
+const addTransportMarker = (lat: number, lon: number, radius: number = 100) => {
+	if (!mapRef.value) {
+		console.warn("Map not ready for transport marker");
+		return;
+	}
+
+	// Remove existing transport marker and circle first
+	clearTransportMarker();
+
+	// Create custom transport icon (different from POI markers)
+	const transportIcon = L.divIcon({
+		className: "transport-marker-icon",
+		html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FF5722" width="36" height="36">
+			<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 10c-1.67 0-3-1.33-3-3h2c0 .55.45 1 1 1s1-.45 1-1h2c0 1.67-1.33 3-3 3z"/>
+		</svg>`,
+		iconSize: [36, 36],
+		iconAnchor: [18, 36],
+		popupAnchor: [0, -36],
+	});
+
+	// Create the marker
+	transportMarkerRef = L.marker([lat, lon], { icon: transportIcon });
+	transportMarkerRef.bindPopup(`<strong>Transport Search Point</strong><br/>Radius: ${radius}m`);
+	transportMarkerRef.addTo(mapRef.value as any);
+
+	// Create the radius circle with light orange color
+	transportCircleRef = L.circle([lat, lon], {
+		radius,
+		color: "#FFA726",
+		fillColor: "#FFB74D",
+		fillOpacity: 0.3,
+		weight: 2,
+		dashArray: "5, 5",
+	});
+	transportCircleRef.addTo(mapRef.value as any);
+};
+
+/**
+ * Clears the transport marker and circle from the map
+ */
+const clearTransportMarker = () => {
+	if (!mapRef.value) return;
+
+	if (transportMarkerRef) {
+		mapRef.value.removeLayer(transportMarkerRef);
+		transportMarkerRef = null;
+	}
+
+	if (transportCircleRef) {
+		mapRef.value.removeLayer(transportCircleRef);
+		transportCircleRef = null;
+	}
+};
+
+/**
  * Handles map click events and emits the coordinates
  */
 const handleMapClick = (event: LeafletMouseEvent) => {
 	emit("map-click", event.latlng.lat, event.latlng.lng);
 };
 
-// Expose methods so external code can call map.clearPoints() / map.drawMunicipalities(...) / map.drawHeatPoints(...) / POI methods
-defineExpose({ clearPoints, drawMunicipalities, drawHeatPoints, addPoiMarker, removePoiMarker });
+// Expose methods so external code can call map.clearPoints() / map.drawMunicipalities(...) / map.drawHeatPoints(...) / POI methods / Station methods
+defineExpose({
+	clearPoints,
+	drawMunicipalities,
+	drawHeatPoints,
+	addPoiMarker,
+	removePoiMarker,
+	addStationMarkers,
+	clearStationMarkers,
+	addTransportMarker,
+	clearTransportMarker,
+});
 </script>
 
 <template>
