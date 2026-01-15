@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from "vue";
+import { nextTick, ref, watch } from "vue";
 import LeafletMap from "components/LeafletMap.vue";
 import { useGeoStore } from "stores/geoStore";
 
@@ -15,16 +15,18 @@ const leafletMapRef = ref<any>(null);
 // Watch for regionHeatPoints changes and draw them on the map
 watch(
 	() => geoStore.regionHeatPoints,
-	(newPoints) => {
+	async (newPoints) => {
 		console.log("regionHeatPoints changed:", newPoints);
+
+		await nextTick();
+
 		if (!leafletMapRef.value) {
 			console.warn("leafletMapRef is not ready yet");
 			return;
 		}
 
 		if (newPoints && newPoints.length > 0) {
-			console.log("Drawing heat points on map");
-			leafletMapRef.value.clearPoints?.();
+			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
 		}
 	},

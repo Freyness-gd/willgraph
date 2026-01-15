@@ -8,7 +8,6 @@
 						ref="searchInput"
 						v-model="search"
 						class="p-2"
-						clearable
 						debounce="500"
 						placeholder="Search (min 3 letters)"
 						rounded
@@ -39,6 +38,7 @@
 		<q-page-container>
 			<router-view />
 		</q-page-container>
+		<MapOverlayForm />
 	</q-layout>
 </template>
 
@@ -46,6 +46,7 @@
 import { computed, ref, watch } from "vue";
 import { useGeoStore } from "stores/geoStore";
 import type { QInput } from "quasar";
+import MapOverlayForm from "components/MapOverlayForm.vue";
 
 // Pinia GeoStore
 const geoStore = useGeoStore();

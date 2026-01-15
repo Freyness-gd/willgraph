@@ -25,9 +25,10 @@ API_BASE_URL = "https://data.mobilitaetsverbuende.at/api/public/v1/data-sets"
 CLIENT_ID = "dbp-public-ui"
 
 AUSTRIAN_STATES = [
-  "Wien", "Niederösterreich", "Oberösterreich", "Salzburg",
-  "Tirol", "Vorarlberg", "Kärnten", "Steiermark", "Burgenland",
-  "Vienna", "Upper Austria", "Lower Austria", "Carinthia", "Styria", "Tyrol"
+  "Wien", "Vienna",
+#  "Niederösterreich", "Oberösterreich", "Salzburg",
+#  "Tirol", "Vorarlberg", "Kärnten", "Steiermark", "Burgenland",
+#  "Vienna", "Upper Austria", "Lower Austria", "Carinthia", "Styria", "Tyrol"
 ]
 class DBPClient:
     def __init__(self, username, password):

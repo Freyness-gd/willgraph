@@ -1,17 +1,5 @@
 import axios from "axios";
-
-interface EstateLocation {
-	x: number;
-	y: number;
-}
-
-interface EstateAddress {
-	location: EstateLocation;
-}
-
-interface Estate {
-	address: EstateAddress;
-}
+import type { RealEstateDto } from "src/types/RealEstate";
 
 const regionService = {
 	/**
@@ -22,18 +10,17 @@ const regionService = {
 		console.log("fetchRegionPoints called for region:", regionName);
 
 		try {
-			const response = await axios.get<Estate[]>("http://localhost:8080/api/estate", {
+			const response = await axios.get<RealEstateDto[]>("http://localhost:8080/api/estate", {
 				params: {
-					regionName,
+					region: regionName,
 				},
 			});
 
 			console.log("API Response:", response.data);
 
-			const points: [number, number][] = response.data.map((estate) => [
-				estate.address.location.y, // latitude
-				estate.address.location.x, // longitude
-			]);
+			const points: [number, number][] = response.data
+				.filter((estate) => estate.address?.location?.latitude != null && estate.address?.location?.longitude != null)
+				.map((estate) => [estate.address!.location!.longitude!, estate.address!.location!.latitude!]);
 
 			console.log("Extracted points:", points);
 			return points;

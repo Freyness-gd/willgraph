@@ -177,14 +177,30 @@ const onMapReady = (map: LeafletMap) => {
  * @param points Array von [latitude, longitude] Paaren
  */
 const drawHeatPoints = (points: [number, number][]) => {
-	if (!mapRef.value) return;
+	if (!mapRef.value) {
+		console.warn("Map not ready for heat points");
+		return;
+	}
 	const map = mapRef.value;
 
-	// Clear previous overlays (both heat and drawn shapes)
-	// clearPoints();
+	// Clear previous heat layer
+	if (heatLayerRef) {
+		try {
+			map.removeLayer(heatLayerRef);
+		} catch (e) {
+			console.warn("Failed to remove old heat layer:", e);
+		}
+		heatLayerRef = null;
+	}
+
+	// Ensure heat pane exists
+	if (!map.getPane("heatPane")) {
+		map.createPane("heatPane");
+	}
 
 	// Convert [lat, lon] pairs to heat layer format [lat, lon, intensity]
 	const heatData = points.map((p) => [p[0], p[1], 0.8] as [number, number, number]);
+	console.log("Creating heat layer with", heatData.length, "points");
 
 	try {
 		const radius = calculateRadiusFromZoom(map.getZoom());
@@ -196,6 +212,7 @@ const drawHeatPoints = (points: [number, number][]) => {
 		});
 		heat.addTo(map);
 		heatLayerRef = heat;
+		console.log("Heat layer added successfully");
 	} catch (err) {
 		console.error("Failed to draw heat points:", err);
 	}
@@ -216,10 +233,7 @@ defineExpose({ clearPoints, drawMunicipalities, drawHeatPoints });
 		style="height: 100vh; width: 100vw"
 		@ready="onMapReady"
 	>
-		<l-tile-layer
-			attribution="© OpenStreetMap contributors"
-			url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-		/>
+		<l-tile-layer attribution="© OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
 		<l-control position="bottomleft">
 			<div style="background: white; padding: 5px; border-radius: 4px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.2)">

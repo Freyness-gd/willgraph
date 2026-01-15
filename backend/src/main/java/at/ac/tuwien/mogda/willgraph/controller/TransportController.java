@@ -25,8 +25,6 @@ public class TransportController {
     public ResponseEntity<List<StationDistanceDto>> findTransportStationsNearby(@RequestParam double lat, @RequestParam double lng, @RequestParam(defaultValue = "1000.0") double radius) {
         log.info("GET /api/transport/nearby lat={} lng={} radius={}", lat, lng, radius);
         return ResponseEntity.status(HttpStatus.OK).body(this.transportService.findStationsByLocation(lat, lng, radius));
-
-
     }
 
 
