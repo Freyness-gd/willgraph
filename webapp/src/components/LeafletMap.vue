@@ -14,7 +14,7 @@ const geoStore = useGeoStore();
 const mapRef = ref<LeafletMap | null>(null);
 let heatLayerRef: any = null;
 let drawnLayerRef: L.FeatureGroup | null = null;
-const zoomRef = ref<number>(12);
+const zoomRef = ref<number>(14);
 
 // POI Markers storage
 const poiMarkersMap = new Map<string, L.Marker>();
@@ -257,16 +257,50 @@ const drawHeatPoints = (points: [number, number][]) => {
 			fillOpacity: 0,
 			weight: 0,
 		});
-		marker.bindPopup(`
-			<div style="min-width: 120px;">
-				<strong>Coordinates</strong><br/>
-				<span>Lat: ${lat.toFixed(6)}</span><br/>
-				<span>Lon: ${lon.toFixed(6)}</span>
-			</div>
-		`);
+
+		// Find estates at this location
+		const estates = geoStore.findEstatesAtCoordinates(lat, lon);
+
+		let popupContent: string;
+		if (estates.length > 0) {
+			const estateListings = estates
+				.map((estate) => {
+					const title = estate.title || "Untitled";
+					const price = estate.price != null ? `€${estate.price.toLocaleString()}` : "N/A";
+					const area = estate.livingArea != null ? `${estate.livingArea}m²` : "";
+					return `<div style="padding: 4px 0; border-bottom: 1px solid #eee;">
+					<strong style="font-size: 12px;">${title}</strong><br/>
+					<span style="color: #1976d2; font-weight: bold;">${price}</span>
+					${area ? `<span style="color: #666; margin-left: 8px;">${area}</span>` : ""}
+				</div>`;
+				})
+				.join("");
+
+			popupContent = `
+				<div style="min-width: 200px; max-width: 300px; max-height: 300px; overflow-y: auto;">
+					<strong style="font-size: 14px;">Real Estate Listings (${estates.length})</strong>
+					<div style="margin-top: 8px;">
+						${estateListings}
+					</div>
+					<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 11px; color: #888;">
+						Lat: ${lat.toFixed(6)}, Lon: ${lon.toFixed(6)}
+					</div>
+				</div>
+			`;
+		} else {
+			popupContent = `
+				<div style="min-width: 120px;">
+					<strong>Coordinates</strong><br/>
+					<span>Lat: ${lat.toFixed(6)}</span><br/>
+					<span>Lon: ${lon.toFixed(6)}</span>
+				</div>
+			`;
+		}
+
+		marker.bindPopup(popupContent);
 		heatPointMarkersRef!.addLayer(marker);
 	});
-	heatPointMarkersRef.addTo(map);
+	heatPointMarkersRef.addTo(map as any);
 	console.log("Heat point markers added for click interaction");
 };
 
@@ -481,7 +515,7 @@ defineExpose({
 		ref="mapRef"
 		:center="[48.2087334, 16.3736765]"
 		:maxZoom="16"
-		:minZoom="8"
+		:minZoom="14"
 		:use-global-leaflet="true"
 		:zoom="zoomRef"
 		style="height: 100vh; width: 100vw"

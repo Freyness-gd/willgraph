@@ -2,6 +2,7 @@ import { acceptHMRUpdate, defineStore } from "pinia";
 import type { Municipality } from "src/types/Municipality";
 import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
 import type { StationDistanceDto } from "src/types/Station";
+import type { RealEstateDto } from "src/types/RealEstate";
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 import transportService from "src/service/transportService";
@@ -21,6 +22,7 @@ export const useGeoStore = defineStore("geoStore", {
 			intensity: number;
 		}>,
 		regionHeatPoints: [] as [number, number][],
+		regionEstatesMap: new Map<string, RealEstateDto[]>(),
 		stationMarkers: [] as StationDistanceDto[],
 		transportMarker: null as { lat: number; lon: number; radius: number } | null,
 		transportMarkerModeActive: false,
@@ -58,6 +60,10 @@ export const useGeoStore = defineStore("geoStore", {
 		},
 		removeSelectedMunicipality(name: string) {
 			this.selectedMunicipalities = this.selectedMunicipalities.filter((m) => m !== name);
+			// Remove estates from map
+			this.regionEstatesMap.delete(name);
+			// Recalculate heat points from remaining regions
+			this.recalculateHeatPoints();
 		},
 		clearSelectedMunicipalities() {
 			this.selectedMunicipalities = [];
@@ -95,10 +101,67 @@ export const useGeoStore = defineStore("geoStore", {
 				return;
 			}
 
-			// Fetch region heat points
-			const points = await regionService.fetchRegionPoints(regionName);
-			console.log("Fetched region points:", points);
-			this.regionHeatPoints = points;
+			// Fetch real estates for region
+			const estates = await regionService.fetchRealEstatesInRegion(regionName);
+			console.log("Fetched estates for region:", regionName, estates.length);
+
+			// Save estates in map
+			this.regionEstatesMap.set(regionName, estates);
+
+			// Recalculate heat points from all regions
+			this.recalculateHeatPoints();
+		},
+		// Recalculate heat points from all regions in the map
+		recalculateHeatPoints() {
+			const allPoints: [number, number][] = [];
+			this.regionEstatesMap.forEach((estates) => {
+				estates.forEach((estate) => {
+					if (estate.address?.location?.latitude != null && estate.address?.location?.longitude != null) {
+						allPoints.push([estate.address.location.latitude, estate.address.location.longitude]);
+					}
+				});
+			});
+			this.regionHeatPoints = allPoints;
+			console.log("Recalculated heat points:", allPoints.length);
+		},
+		// Get all estates from all regions as a flat array
+		getAllEstates(): RealEstateDto[] {
+			const allEstates: RealEstateDto[] = [];
+			this.regionEstatesMap.forEach((estates) => {
+				allEstates.push(...estates);
+			});
+			return allEstates;
+		},
+		// Find estate at specific coordinates
+		findEstateAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateDto | null {
+			for (const estates of this.regionEstatesMap.values()) {
+				for (const estate of estates) {
+					const estateLat = estate.address?.location?.latitude;
+					const estateLon = estate.address?.location?.longitude;
+					if (estateLat != null && estateLon != null) {
+						if (Math.abs(estateLat - lat) < tolerance && Math.abs(estateLon - lon) < tolerance) {
+							return estate;
+						}
+					}
+				}
+			}
+			return null;
+		},
+		// Find all estates at specific coordinates (there may be multiple at same location)
+		findEstatesAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateDto[] {
+			const found: RealEstateDto[] = [];
+			for (const estates of this.regionEstatesMap.values()) {
+				for (const estate of estates) {
+					const estateLat = estate.address?.location?.latitude;
+					const estateLon = estate.address?.location?.longitude;
+					if (estateLat != null && estateLon != null) {
+						if (Math.abs(estateLat - lat) < tolerance && Math.abs(estateLon - lon) < tolerance) {
+							found.push(estate);
+						}
+					}
+				}
+			}
+			return found;
 		},
 		// Transport marker mode - toggle to enable placing a marker on the map
 		toggleTransportMarkerMode() {
