@@ -4,6 +4,8 @@ import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJso
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 
+const MAX_MUNICIPALITIES = 5;
+
 export const useGeoStore = defineStore("geoStore", {
 	state: () => ({
 		municipalities: [] as Municipality[],
@@ -25,12 +27,27 @@ export const useGeoStore = defineStore("geoStore", {
 		getSelectedMunicipalities(): Municipality[] {
 			return this.municipalities.filter((m) => this.selectedMunicipalities.includes(m.name));
 		},
+		canAddMoreMunicipalities(): boolean {
+			return this.selectedMunicipalities.length < MAX_MUNICIPALITIES;
+		},
+		selectedMunicipalitiesCount(): number {
+			return this.selectedMunicipalities.length;
+		},
 	},
 
 	actions: {
-		addSelectedMunicipality(name: string) {
+		addSelectedMunicipality(name: string): boolean {
+			if (this.selectedMunicipalities.length >= MAX_MUNICIPALITIES) {
+				console.warn(`Cannot add more than ${MAX_MUNICIPALITIES} municipalities`);
+				return false;
+			}
+			if (this.selectedMunicipalities.includes(name)) {
+				console.warn(`Municipality ${name} is already selected`);
+				return false;
+			}
 			console.log("Selected municipality: ", name);
 			this.selectedMunicipalities.push(name);
+			return true;
 		},
 		removeSelectedMunicipality(name: string) {
 			this.selectedMunicipalities = this.selectedMunicipalities.filter((m) => m !== name);
@@ -41,9 +58,35 @@ export const useGeoStore = defineStore("geoStore", {
 		isMunicipalitySaved(name: string): boolean {
 			return this.selectedMunicipalities.includes(name);
 		},
+		moveMunicipalityUp(name: string) {
+			const index = this.selectedMunicipalities.indexOf(name);
+			if (index > 0) {
+				const temp = this.selectedMunicipalities[index - 1];
+				if (temp !== undefined) {
+					this.selectedMunicipalities[index - 1] = name;
+					this.selectedMunicipalities[index] = temp;
+				}
+			}
+		},
+		moveMunicipalityDown(name: string) {
+			const index = this.selectedMunicipalities.indexOf(name);
+			if (index < this.selectedMunicipalities.length - 1) {
+				const temp = this.selectedMunicipalities[index + 1];
+				if (temp !== undefined) {
+					this.selectedMunicipalities[index + 1] = name;
+					this.selectedMunicipalities[index] = temp;
+				}
+			}
+		},
+		reorderMunicipalities(newOrder: string[]) {
+			this.selectedMunicipalities = newOrder;
+		},
 		async addRegionAndFetchPoints(regionName: string) {
 			console.log("addRegionAndFetchPoints called for:", regionName);
-			this.addSelectedMunicipality(regionName);
+			const added = this.addSelectedMunicipality(regionName);
+			if (!added) {
+				return;
+			}
 
 			// Fetch region heat points
 			const points = await regionService.fetchRegionPoints(regionName);
