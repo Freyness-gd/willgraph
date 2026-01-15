@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { LControl, LGeoJson, LMap, LTileLayer } from "@vue-leaflet/vue-leaflet";
-import type { Map as LeafletMap } from "leaflet";
+import type { LeafletMouseEvent, Map as LeafletMap } from "leaflet";
 // eslint-disable-next-line no-duplicate-imports
 import L from "leaflet";
 import type { Municipality } from "src/types/Municipality";
+import type { Point } from "src/types/Point";
 import { useGeoStore } from "stores/geoStore";
 import { municipalitiesToGeoJson } from "src/mapper/MunicipalityMapper";
 
@@ -13,6 +14,13 @@ const mapRef = ref<LeafletMap | null>(null);
 let heatLayerRef: any = null;
 let drawnLayerRef: L.FeatureGroup | null = null;
 const zoomRef = ref<number>(12);
+
+// POI Markers storage
+const poiMarkersMap = new Map<string, L.Marker>();
+
+const emit = defineEmits<{
+	(e: "map-click", lat: number, lon: number): void;
+}>();
 
 const geoJson = computed(() => municipalitiesToGeoJson(geoStore.getSelectedMunicipalities));
 
@@ -218,8 +226,52 @@ const drawHeatPoints = (points: [number, number][]) => {
 	}
 };
 
-// Expose methods so external code can call map.clearPoints() / map.drawMunicipalities(...) / map.drawHeatPoints(...)
-defineExpose({ clearPoints, drawMunicipalities, drawHeatPoints });
+/**
+ * Adds a POI marker to the map
+ * @param poi The Point object containing id, lat, lon, and color
+ */
+const addPoiMarker = (poi: Point) => {
+	if (!mapRef.value) {
+		console.warn("Map not ready for POI marker");
+		return;
+	}
+
+	// Create custom icon with the POI color
+	const icon = L.divIcon({
+		className: "poi-marker-icon",
+		html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${poi.color}" width="32" height="32">
+			<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+		</svg>`,
+		iconSize: [32, 32],
+		iconAnchor: [16, 32],
+	});
+
+	const marker = L.marker([poi.lat, poi.lon], { icon });
+	marker.addTo(mapRef.value as any);
+	poiMarkersMap.set(poi.id, marker);
+};
+
+/**
+ * Removes a POI marker from the map
+ * @param poiId The id of the POI to remove
+ */
+const removePoiMarker = (poiId: string) => {
+	const marker = poiMarkersMap.get(poiId);
+	if (marker && mapRef.value) {
+		mapRef.value.removeLayer(marker);
+		poiMarkersMap.delete(poiId);
+	}
+};
+
+/**
+ * Handles map click events and emits the coordinates
+ */
+const handleMapClick = (event: LeafletMouseEvent) => {
+	emit("map-click", event.latlng.lat, event.latlng.lng);
+};
+
+// Expose methods so external code can call map.clearPoints() / map.drawMunicipalities(...) / map.drawHeatPoints(...) / POI methods
+defineExpose({ clearPoints, drawMunicipalities, drawHeatPoints, addPoiMarker, removePoiMarker });
 </script>
 
 <template>
@@ -231,6 +283,7 @@ defineExpose({ clearPoints, drawMunicipalities, drawHeatPoints });
 		:use-global-leaflet="true"
 		:zoom="zoomRef"
 		style="height: 100vh; width: 100vw"
+		@click="handleMapClick"
 		@ready="onMapReady"
 	>
 		<l-tile-layer attribution="© OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
