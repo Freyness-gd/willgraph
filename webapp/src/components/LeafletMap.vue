@@ -22,6 +22,9 @@ const poiMarkersMap = new Map<string, L.Marker>();
 // Station Markers storage
 const stationMarkersMap = new Map<string, L.Marker>();
 
+// Heat point markers for click interaction
+let heatPointMarkersRef: L.LayerGroup | null = null;
+
 // Transport marker with radius circle
 let transportMarkerRef: L.Marker | null = null;
 let transportCircleRef: L.Circle | null = null;
@@ -209,6 +212,16 @@ const drawHeatPoints = (points: [number, number][]) => {
 		heatLayerRef = null;
 	}
 
+	// Clear previous heat point markers
+	if (heatPointMarkersRef) {
+		try {
+			map.removeLayer(heatPointMarkersRef);
+		} catch (e) {
+			console.warn("Failed to remove old heat point markers:", e);
+		}
+		heatPointMarkersRef = null;
+	}
+
 	// Ensure heat pane exists
 	if (!map.getPane("heatPane")) {
 		map.createPane("heatPane");
@@ -232,6 +245,29 @@ const drawHeatPoints = (points: [number, number][]) => {
 	} catch (err) {
 		console.error("Failed to draw heat points:", err);
 	}
+
+	// Add clickable markers for each heat point
+	heatPointMarkersRef = L.layerGroup();
+	points.forEach((point) => {
+		const [lat, lon] = point;
+		const marker = L.circleMarker([lat, lon], {
+			radius: 8,
+			fillColor: "transparent",
+			color: "transparent",
+			fillOpacity: 0,
+			weight: 0,
+		});
+		marker.bindPopup(`
+			<div style="min-width: 120px;">
+				<strong>Coordinates</strong><br/>
+				<span>Lat: ${lat.toFixed(6)}</span><br/>
+				<span>Lon: ${lon.toFixed(6)}</span>
+			</div>
+		`);
+		heatPointMarkersRef!.addLayer(marker);
+	});
+	heatPointMarkersRef.addTo(map);
+	console.log("Heat point markers added for click interaction");
 };
 
 /**
@@ -281,6 +317,9 @@ const addStationMarkers = (stations: StationDistanceDto[]) => {
 		return;
 	}
 
+	console.log("addStationMarkers called with", stations.length, "stations");
+	console.log("First station data:", stations[0]);
+
 	// Create custom bus icon
 	const busIcon = L.divIcon({
 		className: "station-marker-icon",
@@ -292,15 +331,38 @@ const addStationMarkers = (stations: StationDistanceDto[]) => {
 		popupAnchor: [0, -28],
 	});
 
-	stations.forEach((station) => {
-		if (!station.location) return;
+	stations.forEach((station, index) => {
+		console.log(`Station ${index}:`, station);
 
-		const stationKey = `${station.name}-${station.location.latitude}-${station.location.longitude}`;
+		// Try to get coordinates from different possible structures
+		let lat: number | undefined;
+		let lng: number | undefined;
+
+		if (station.location) {
+			lat = station.location.latitude;
+			lng = station.location.longitude;
+		} else if ((station as any).latitude !== undefined && (station as any).longitude !== undefined) {
+			// Fallback: coordinates directly on station object
+			lat = (station as any).latitude;
+			lng = (station as any).longitude;
+		}
+
+		if (lat === undefined || lng === undefined) {
+			console.warn(`Station ${station.name} has no valid coordinates:`, station);
+			return;
+		}
+
+		const stationKey = `${station.name}-${lat}-${lng}`;
 
 		// Skip if marker already exists
-		if (stationMarkersMap.has(stationKey)) return;
+		if (stationMarkersMap.has(stationKey)) {
+			console.log(`Station ${station.name} already exists, skipping`);
+			return;
+		}
 
-		const marker = L.marker([station.location.latitude, station.location.longitude], { icon: busIcon });
+		console.log(`Creating marker for ${station.name} at [${lat}, ${lng}]`);
+
+		const marker = L.marker([lat, lng], { icon: busIcon });
 
 		// Create popup content with station info
 		const popupContent = `
@@ -315,7 +377,10 @@ const addStationMarkers = (stations: StationDistanceDto[]) => {
 
 		marker.addTo(mapRef.value as any);
 		stationMarkersMap.set(stationKey, marker);
+		console.log(`Marker added for ${station.name}`);
 	});
+
+	console.log(`Total markers in map: ${stationMarkersMap.size}`);
 };
 
 /**
