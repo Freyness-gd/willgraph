@@ -9,11 +9,18 @@ import io
 import re
 import shutil
 import requests
+import logging
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
-
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger(__name__)
 BASE_DIR = './gtfs_data'
 OUTPUT_NODES = 'transport_nodes.csv'
 OUTPUT_EDGES = 'transport_edges.csv'
@@ -26,9 +33,9 @@ CLIENT_ID = "dbp-public-ui"
 
 AUSTRIAN_STATES = [
   "Wien", "Vienna",
-#  "Niederösterreich", "Oberösterreich", "Salzburg",
-#  "Tirol", "Vorarlberg", "Kärnten", "Steiermark", "Burgenland",
-#  "Vienna", "Upper Austria", "Lower Austria", "Carinthia", "Styria", "Tyrol"
+  "Niederösterreich", "Oberösterreich", "Salzburg",
+  "Tirol", "Vorarlberg", "Kärnten", "Steiermark", "Burgenland",
+  "Vienna", "Upper Austria", "Lower Austria", "Carinthia", "Styria", "Tyrol"
 ]
 class DBPClient:
     def __init__(self, username, password):
@@ -37,7 +44,7 @@ class DBPClient:
         self.token = None
 
     def authenticate(self):
-        print("Authenticating with DBP...")
+        logger.info("Authenticating with DBP...")
         payload = {
             'client_id': CLIENT_ID,
             'username': self.username,
@@ -49,10 +56,10 @@ class DBPClient:
             response = requests.post(TOKEN_URL, data=payload)
             response.raise_for_status()
             self.token = response.json().get('access_token')
-            print("Authentication successful.")
+            logger.info("Authentication successful.")
         except Exception as e:
-            print(f"Authentication failed, maybe .env is missing or not correct?: {e}")
-            self.token = None
+            logger.error(f"Authentication failed: {e}")
+            sys.exit(1)
 
     def get_headers(self):
         return {
@@ -64,12 +71,12 @@ class DBPClient:
         if not self.token: return
 
         url = f"{API_BASE_URL}?tagIds=20&tagFilterModeInclusive=true"
-        print(f"Fetching dataset list from {url}...")
+        logger.info(f"Fetching dataset list from {url}...")
         try:
             response = requests.get(url, headers=self.get_headers(), verify=False)
             datasets = response.json()
         except Exception as e:
-            print(f"Error listing datasets: {e}")
+            logger.error(f"Error listing datasets: {e}")
             return
 
         current_year = str(datetime.now().year)
@@ -81,11 +88,11 @@ class DBPClient:
 
             #Exclusion properties
             if "flex" in ds_name.lower():
-                print(f"Skipping (Excluded Name): {ds_name}")
+                logger.info(f"Skipping (Excluded Name): {ds_name}")
                 continue
 
             if "in sieben teilen" in ds_name.lower():
-                print(f"Skipping (Excluded Split): {ds_name}")
+                logger.info(f"Skipping (Excluded Split): {ds_name}")
                 continue
 
             tags = ds.get('tags', [])
@@ -93,13 +100,13 @@ class DBPClient:
             is_regional = any(state.lower() in ds_name.lower() for state in AUSTRIAN_STATES) or \
                           any(state in tag_val for state in AUSTRIAN_STATES for tag_val in tag_values)
             if is_regional:
-                print(f"Found Match: {ds_name} (ID: {ds_id})")
+                logger.info(f"Found Match: {ds_name} (ID: {ds_id})")
                 self.download_and_extract(ds_id, ds_name, current_year, output_base_dir)
                 download_count += 1
             else:
                 pass
 
-        print(f"Finished. Downloaded/Updated {download_count} datasets.")
+        logger.info(f"Finished. Downloaded/Updated {download_count} datasets.")
 
     def download_and_extract(self, ds_id, dataset_name, current_year, output_base_dir):
         clean_name = re.sub(r'[^a-zA-Z0-9]', '_', dataset_name)
@@ -108,20 +115,32 @@ class DBPClient:
             shutil.rmtree(target_dir)
         os.makedirs(target_dir, exist_ok=True)
         url = f"{API_BASE_URL}/{ds_id}/{current_year}/file"
+        temp_zip_path = os.path.join(target_dir, "temp_gtfs.zip")
         try:
             headers = self.get_headers()
             headers['Accept'] = 'application/zip'
-            print(f"  Downloading ID {ds_id}...")
-            response = requests.get(url, headers=headers, stream=True, verify=False)
-            if response.status_code == 404:
-                print(f"  Warning: No data found for year {current_year}. Trying previous year...")
-                return
-            response.raise_for_status()
-            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+            logger.info(f"  Downloading ID {ds_id} (Streaming to disk)...")
+            with requests.get(url, headers=headers, stream=True, verify=False, timeout=60) as response:
+                response = requests.get(url, headers=headers, stream=True, verify=False)
+                if response.status_code == 404:
+                    logger.warning(f"  Warning: No data found for year {current_year}.")
+                    return
+                response.raise_for_status()
+
+                with open(temp_zip_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+
+            logger.info(f"  Extracting {temp_zip_path}...")
+            with zipfile.ZipFile(temp_zip_path, 'r') as z:
                 z.extractall(target_dir)
-            print(f"  Extracted to: {target_dir}")
+            os.remove(temp_zip_path)
+            logger.info(f"  Extracted to: {target_dir}")
         except Exception as e:
-            print(f"  Failed to download ID {ds_id}: {e}")
+            logger.error(f"  Failed to download ID {ds_id}: {e}")
+            if os.path.exists(temp_zip_path):
+                os.remove(temp_zip_path)
 
     def download_dataset(self, dataset_id, year, output_folder):
         """Downloads and extracts the dataset for a specific year."""
@@ -146,14 +165,14 @@ class DBPClient:
 
 def fetch_data_from_api():
     if not DBP_USERNAME or "EXAMPLE.COM" in DBP_USERNAME:
-        print("Skipping API download (Credentials not set). Using local files.")
+        logger.warning("Skipping API download (Credentials not set). Using local files.")
         return
 
     client = DBPClient(DBP_USERNAME, DBP_PASSWORD)
     client.authenticate()
 
     if not client.token:
-        return
+        sys.exit(1)
 
     client.sync_regional_gtfs(BASE_DIR)
 
@@ -169,48 +188,48 @@ def parse_gtfs_time(time_str):
 
 def process_gtfs():
     fetch_data_from_api()
-    print("Loading GTFS data...")
+    logger.info("Loading GTFS data from disk...")
     stop_files = glob.glob(os.path.join(BASE_DIR, '**', 'stops.txt'), recursive=True)
     time_files = glob.glob(os.path.join(BASE_DIR, '**', 'stop_times.txt'), recursive=True)
 
     if not stop_files:
-        print(f"No stops.txt found in subdirectories of {BASE_DIR}")
-        return
+        logger.error(f"No stops.txt found in subdirectories of {BASE_DIR}")
+        sys.exit(1)
 
-    print(f"Found {len(stop_files)} GTFS directories.")
+    logger.info(f"Found {len(stop_files)} GTFS directories.")
 
-    print("Loading stops from all sources...")
+    logger.info("Loading stops from all sources...")
     stops_cols = ['stop_id', 'stop_name', 'stop_lat', 'stop_lon']
 
     stops_df_list = []
     for f in stop_files:
-        print(f"  Reading {f}...")
+        logger.debug(f"  Reading {f}...")
         try:
             # Force stop_id to string to avoid mismatches
             df = pd.read_csv(f, usecols=lambda c: c in stops_cols, dtype={'stop_id': str})
             stops_df_list.append(df)
         except Exception as e:
-            print(f"  Warning: Could not read {f}: {e}")
+            logger.warning(f"  Could not read {f}: {e}")
 
     if not stops_df_list:
-        print("Error: No valid stops data found.")
-        return
+        logger.error("No valid stops data found.")
+        sys.exit(1)
 
     all_stops = pd.concat(stops_df_list, ignore_index=True)
     all_stops.drop_duplicates(subset=['stop_id'], inplace=True)
-    print(f"Total unique stops: {len(all_stops)}")
+    logger.info(f"Total unique stops: {len(all_stops)}")
 
-    print("Processing stop_times...")
+    logger.info("Processing stop_times...")
     time_cols = ['trip_id', 'stop_id', 'arrival_time', 'departure_time', 'stop_sequence']
 
     all_edges = []
 
     for f in time_files:
-        print(f"  Processing routes in {os.path.basename(os.path.dirname(f))}...")
+        dataset_name = os.path.basename(os.path.dirname(f))
+        logger.info(f"  Processing routes in {dataset_name}...")
 
         # Process file-by-file to keep RAM usage low
         try:
-            # Load
             df = pd.read_csv(f, usecols=lambda c: c in time_cols,
                              dtype={'trip_id': str, 'stop_id': str, 'stop_sequence': 'int32'})
 
@@ -241,13 +260,13 @@ def process_gtfs():
             all_edges.append(edges_agg)
 
         except Exception as e:
-            print(f"  Skipping {f} due to error: {e}")
+            logger.warning(f"  Skipping {f} due to error: {e}")
 
     if not all_edges:
-        print("Error: No edges created.")
-        return
+        logger.error("No edges created.")
+        sys.exit(1)
 
-    print("Merging network...")
+    logger.info("Merging network...")
     total_edges = pd.concat(all_edges, ignore_index=True)
 
     final_edges = total_edges.groupby(['stop_id', 'next_stop_id']).agg(
@@ -264,10 +283,10 @@ def process_gtfs():
         final_edges['target_id'].isin(valid_ids)
         ]
 
-    print(f"Exporting {len(all_stops)} nodes and {len(final_edges)} edges...")
+    logger.info(f"Exporting {len(all_stops)} nodes and {len(final_edges)} edges...")
     all_stops.to_csv(OUTPUT_NODES, index=False)
     final_edges.to_csv(OUTPUT_EDGES, index=False)
-    print("Done!")
+    logger.info("Done!")
 
 if __name__ == "__main__":
     requests.packages.urllib3.disable_warnings()

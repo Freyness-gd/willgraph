@@ -4,7 +4,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY .env .
 COPY gtfs_processor.py .
 COPY import_transport_to_neo4j.py .
 
