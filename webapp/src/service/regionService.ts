@@ -1,5 +1,6 @@
 import axios from "axios";
 import type { RealEstateDto } from "src/types/RealEstate";
+import type { PointToPointDistanceDto } from "src/types/Point";
 
 const regionService = {
 	/**
@@ -53,6 +54,41 @@ const regionService = {
 		} catch (error) {
 			console.error("Error fetching real estates in region:", error);
 			return [];
+		}
+	},
+
+	/**
+	 * Calculates distance between two points.
+	 * Makes GET request to http://localhost:8080/pois/distance
+	 * @param fromLat Starting latitude
+	 * @param fromLon Starting longitude
+	 * @param toLat Destination latitude
+	 * @param toLon Destination longitude
+	 * @returns PointToPointDistanceDto with distance and walking duration
+	 */
+	async calculateDistanceBetweenPoints(
+		fromLat: number,
+		fromLon: number,
+		toLat: number,
+		toLon: number
+	): Promise<PointToPointDistanceDto | null> {
+		console.log("calculateDistanceBetweenPoints called:", { fromLat, fromLon, toLat, toLon });
+
+		try {
+			const response = await axios.get<PointToPointDistanceDto>("http://localhost:8080/pois/distance", {
+				params: {
+					fromLat,
+					fromLon,
+					toLat,
+					toLon,
+				},
+			});
+
+			console.log("Distance API Response:", response.data);
+			return response.data;
+		} catch (error) {
+			console.error("Error calculating distance between points:", error);
+			return null;
 		}
 	},
 };

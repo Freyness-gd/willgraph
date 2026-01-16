@@ -77,6 +77,9 @@
 import { ref } from "vue";
 import searchService from "src/service/searchService";
 import type { Point } from "src/types/Point";
+import { useGeoStore } from "stores/geoStore";
+
+const geoStore = useGeoStore();
 
 const priceMin = ref<number | null>(null);
 const priceMax = ref<number | null>(null);
@@ -115,6 +118,8 @@ const addPoi = (lat: number, lon: number): Point | null => {
 	};
 
 	poiList.value.push(newPoi);
+	// Sync with geoStore
+	geoStore.setPoiList([...poiList.value]);
 	return newPoi;
 };
 
@@ -122,6 +127,8 @@ const removePoi = (id: string) => {
 	const poi = poiList.value.find((p) => p.id === id);
 	if (poi) {
 		poiList.value = poiList.value.filter((p) => p.id !== id);
+		// Sync with geoStore
+		geoStore.setPoiList([...poiList.value]);
 		emit("poi-removed", poi);
 	}
 };

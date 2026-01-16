@@ -3,6 +3,7 @@ import type { Municipality } from "src/types/Municipality";
 import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
 import type { StationDistanceDto } from "src/types/Station";
 import type { RealEstateDto } from "src/types/RealEstate";
+import type { Point, PoiWithDistance } from "src/types/Point";
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 import transportService from "src/service/transportService";
@@ -24,6 +25,11 @@ export const useGeoStore = defineStore("geoStore", {
 		regionHeatPoints: [] as [number, number][],
 		regionEstatesMap: new Map<string, RealEstateDto[]>(),
 		selectedEstate: null as RealEstateDto | null,
+		// POI state
+		poiList: [] as Point[],
+		poiDistances: [] as PoiWithDistance[],
+		poiDistancesLoading: false,
+		showPoiDistances: false,
 		stationMarkers: [] as StationDistanceDto[],
 		transportMarker: null as { lat: number; lon: number; radius: number } | null,
 		transportMarkerModeActive: false,
@@ -206,10 +212,76 @@ export const useGeoStore = defineStore("geoStore", {
 		// Select an estate for detailed view
 		selectEstate(estate: RealEstateDto) {
 			this.selectedEstate = estate;
+			// Reset POI distances when selecting a new estate
+			this.poiDistances = [];
+			this.showPoiDistances = false;
 		},
 		// Clear selected estate
 		clearSelectedEstate() {
 			this.selectedEstate = null;
+			this.poiDistances = [];
+			this.showPoiDistances = false;
+		},
+		// Set POI list (called from MapOverlayForm)
+		setPoiList(pois: Point[]) {
+			this.poiList = pois;
+		},
+		// Add a POI
+		addPoi(poi: Point) {
+			this.poiList.push(poi);
+		},
+		// Remove a POI
+		removePoi(poiId: string) {
+			this.poiList = this.poiList.filter((p) => p.id !== poiId);
+		},
+		// Toggle POI distances panel
+		togglePoiDistances() {
+			this.showPoiDistances = !this.showPoiDistances;
+			if (this.showPoiDistances) {
+				void this.calculatePoiDistances();
+			}
+		},
+		// Calculate distances from selected estate to all POIs
+		async calculatePoiDistances() {
+			if (!this.selectedEstate?.address?.location) {
+				console.warn("No selected estate with location");
+				return;
+			}
+
+			const estateLat = this.selectedEstate.address.location.latitude;
+			const estateLon = this.selectedEstate.address.location.longitude;
+
+			if (estateLat == null || estateLon == null) {
+				console.warn("Selected estate has no coordinates");
+				return;
+			}
+
+			if (this.poiList.length === 0) {
+				console.log("No POIs to calculate distances for");
+				this.poiDistances = [];
+				return;
+			}
+
+			this.poiDistancesLoading = true;
+			const results: PoiWithDistance[] = [];
+
+			try {
+				for (const poi of this.poiList) {
+					const distance = await regionService.calculateDistanceBetweenPoints(estateLat, estateLon, poi.lat, poi.lon);
+
+					results.push({
+						...poi,
+						distance: distance ?? undefined,
+					});
+				}
+
+				this.poiDistances = results;
+				console.log("POI distances calculated:", results);
+			} catch (error) {
+				console.error("Error calculating POI distances:", error);
+			} finally {
+				this.poiDistancesLoading = false;
+			}
 		},
 		async loadGeoData() {
 			console.log("Loading Vienna districts...");

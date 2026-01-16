@@ -43,7 +43,7 @@ services:
     depends_on:
       neo4j:
         condition: service_healthy
-      data-importer:
-        condition: service_completed_successfully
+#      data-importer:
+#        condition: service_completed_successfully
 volumes:
   neo4j_data:

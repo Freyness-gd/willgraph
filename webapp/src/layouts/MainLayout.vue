@@ -155,9 +155,46 @@
 						<q-btn color="primary" dense icon="storefront" outline @click="onAmenitiesTool">
 							<q-tooltip>Amenities in the area</q-tooltip>
 						</q-btn>
-						<q-btn color="primary" dense icon="place" outline @click="onPoiDistanceTool">
+						<q-btn
+							:color="geoStore.showPoiDistances ? 'secondary' : 'primary'"
+							:loading="geoStore.poiDistancesLoading"
+							dense
+							icon="place"
+							outline
+							@click="onPoiDistanceTool"
+						>
 							<q-tooltip>POI distance</q-tooltip>
 						</q-btn>
+					</div>
+				</div>
+
+				<!-- POI Distances Panel -->
+				<div v-if="geoStore.showPoiDistances" class="poi-distances-panel">
+					<div class="poi-distances-header">
+						<q-icon color="primary" name="place" size="18px" />
+						<span>POI Distances</span>
+					</div>
+					<div v-if="geoStore.poiDistancesLoading" class="poi-distances-loading">
+						<q-spinner color="primary" size="20px" />
+						<span>Calculating...</span>
+					</div>
+					<div v-else-if="geoStore.poiDistances.length === 0" class="poi-distances-empty">
+						<span>No POIs added. Add POIs using the form on the right.</span>
+					</div>
+					<div v-else class="poi-distances-list">
+						<div v-for="poi in geoStore.poiDistances" :key="poi.id" class="poi-distance-item">
+							<div :style="{ backgroundColor: poi.color }" class="poi-color-dot"></div>
+							<div class="poi-distance-info">
+								<div class="poi-distance-coords">{{ poi.lat.toFixed(4) }}, {{ poi.lon.toFixed(4) }}</div>
+								<div v-if="poi.distance" class="poi-distance-values">
+									<span class="distance-meters">{{ formatDistanceMeters(poi.distance.distanceInMeters) }}</span>
+									<span class="distance-walking"
+										>🚶 {{ formatWalkingTime(poi.distance.walkingDurationInMinutes) }}</span
+									>
+								</div>
+								<div v-else class="poi-distance-error">Unable to calculate</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -438,7 +475,23 @@ const formatDate = (value: string | null | undefined): string => {
 	}
 };
 
-// Tool button handlers (placeholder implementations)
+const formatDistanceMeters = (value: number | null | undefined): string => {
+	if (value === null || value === undefined) return "N/A";
+	if (value >= 1000) {
+		return `${(value / 1000).toFixed(1)}km`;
+	}
+	return `${Math.round(value)}m`;
+};
+
+const formatWalkingTime = (value: number | null | undefined): string => {
+	if (value === null || value === undefined) return "N/A";
+	if (value < 1) {
+		return "< 1 min";
+	}
+	return `${Math.round(value)} min`;
+};
+
+// Tool button handlers
 const onTransportTool = () => {
 	console.log("Transport in the area tool clicked");
 	// TODO: Implement transport search around estate location
@@ -451,7 +504,7 @@ const onAmenitiesTool = () => {
 
 const onPoiDistanceTool = () => {
 	console.log("POI distance tool clicked");
-	// TODO: Implement POI distance calculation
+	geoStore.togglePoiDistances();
 };
 </script>
 
@@ -580,6 +633,99 @@ const onPoiDistanceTool = () => {
 
 .tools-buttons .q-btn {
 	flex: 1;
+}
+
+/* POI Distances Panel */
+.poi-distances-panel {
+	margin-top: 12px;
+	padding: 12px;
+	background-color: #f5f5f5;
+	border-radius: 6px;
+	border: 1px solid #e0e0e0;
+}
+
+.poi-distances-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #333;
+	margin-bottom: 10px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.poi-distances-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	color: #666;
+	padding: 8px 0;
+}
+
+.poi-distances-empty {
+	font-size: 11px;
+	color: #888;
+	font-style: italic;
+	padding: 8px 0;
+}
+
+.poi-distances-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.poi-distance-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 8px;
+	background-color: white;
+	border-radius: 4px;
+	border: 1px solid #eee;
+}
+
+.poi-color-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.poi-distance-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.poi-distance-coords {
+	font-size: 11px;
+	color: #666;
+	margin-bottom: 4px;
+}
+
+.poi-distance-values {
+	display: flex;
+	gap: 12px;
+	font-size: 12px;
+}
+
+.distance-meters {
+	font-weight: 600;
+	color: #1976d2;
+}
+
+.distance-walking {
+	color: #666;
+}
+
+.poi-distance-error {
+	font-size: 11px;
+	color: #d32f2f;
+	font-style: italic;
 }
 
 /* Municipalities Panel */
