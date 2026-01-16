@@ -17,13 +17,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/pois/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
-                        .anyRequest().authenticated());
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/**").permitAll()
+                .requestMatchers("/pois/**").permitAll()
+                .requestMatchers("/amenities/**").permitAll()
+                .requestMatchers("/actuator/**").permitAll()
+                .anyRequest().authenticated());
         return http.build();
     }
 

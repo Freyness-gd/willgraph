@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AmenityRepository extends Neo4jRepository<AmenityTypeEntity, String> {
 
+
 }

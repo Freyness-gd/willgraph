@@ -1,6 +1,6 @@
 package at.ac.tuwien.mogda.willgraph.service.impl;
 
-import at.ac.tuwien.mogda.willgraph.controller.dto.PoIDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.PoIDistanceDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.PointToPointDistanceDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.WalkingDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.AmenityTypeEntity;
@@ -10,7 +10,6 @@ import at.ac.tuwien.mogda.willgraph.repository.AmenityTypeRepository;
 import at.ac.tuwien.mogda.willgraph.repository.PoIRepository;
 import at.ac.tuwien.mogda.willgraph.service.PoIService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.geo.Point;
 import org.springframework.data.neo4j.types.GeographicPoint2d;
 import org.springframework.stereotype.Service;
 
@@ -37,7 +36,7 @@ public class PoIServiceImpl implements PoIService {
     }
 
     @Override
-    public PointOfInterestEntity create(PoIDto poi) {
+    public PointOfInterestEntity create(PoIDistanceDto poi) {
         //TODO: Validation && Logger
 
 //        AddressCreateDto poiAddress = poi.getAddress();
@@ -101,6 +100,11 @@ public class PoIServiceImpl implements PoIService {
             .distanceInMeters(distanceInMeters)
             .walkingDurationInMinutes(walkingDurationInMinutes)
             .build();
+    }
+
+    @Override
+    public List<PoIDistanceDto> findPoIsNearby(double lat, double lng, double radius) {
+        return this.poiRepository.findPoIsNearby(lat, lng, radius);
     }
 
     /**
