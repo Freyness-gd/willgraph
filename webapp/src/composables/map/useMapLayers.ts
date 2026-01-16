@@ -14,6 +14,7 @@ export function useMapLayers() {
 	let heatLayerRef: any = null;
 	let drawnLayerRef: L.FeatureGroup | null = null;
 	let heatPointMarkersRef: L.LayerGroup | null = null;
+	let selectedEstateMarkerRef: L.Marker | null = null;
 
 	/**
 	 * Initialize the composable with a map reference
@@ -270,6 +271,100 @@ export function useMapLayers() {
 		}
 	};
 
+	/**
+	 * Set the opacity of the heat layer
+	 * @param opacity Value between 0 and 1
+	 */
+	const setHeatLayerOpacity = (opacity: number) => {
+		if (heatLayerRef) {
+			try {
+				// Heat layer uses canvas, we need to access the canvas element
+				const canvas = heatLayerRef._canvas;
+				if (canvas) {
+					canvas.style.opacity = opacity.toString();
+				}
+			} catch (e) {
+				console.warn("Failed to set heat layer opacity:", e);
+			}
+		}
+	};
+
+	/**
+	 * Show a marker at the selected estate location
+	 * @param lat Latitude
+	 * @param lon Longitude
+	 */
+	const showSelectedEstateMarker = (lat: number, lon: number) => {
+		if (!mapRef.value) return;
+
+		// Remove existing marker first
+		clearSelectedEstateMarker();
+
+		// Create home icon marker with red background circle
+		const selectedIcon = L.divIcon({
+			className: "selected-estate-marker",
+			html: `<div style="position: relative; width: 44px; height: 44px;">
+				<div style="position: absolute; width: 44px; height: 44px; background: #d32f2f; border-radius: 50%; box-shadow: 0 3px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="26" height="26">
+						<path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+					</svg>
+				</div>
+				<div style="position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 10px solid #d32f2f;"></div>
+			</div>`,
+			iconSize: [44, 54],
+			iconAnchor: [22, 54],
+		});
+
+		selectedEstateMarkerRef = L.marker([lat, lon], {
+			icon: selectedIcon,
+			zIndexOffset: 1000, // Make sure it's on top
+		});
+		selectedEstateMarkerRef.addTo(mapRef.value as any);
+	};
+
+	/**
+	 * Clear the selected estate marker
+	 */
+	const clearSelectedEstateMarker = () => {
+		if (selectedEstateMarkerRef && mapRef.value) {
+			mapRef.value.removeLayer(selectedEstateMarkerRef);
+			selectedEstateMarkerRef = null;
+		}
+	};
+
+	/**
+	 * Set the map zoom to minimum zoom level
+	 * @returns Promise that resolves when zoom animation is complete
+	 */
+	const setZoomToMin = (): Promise<void> => {
+		return new Promise((resolve) => {
+			if (!mapRef.value) {
+				resolve();
+				return;
+			}
+
+			const map = mapRef.value;
+			const minZoom = map.getMinZoom();
+			const currentZoom = map.getZoom();
+
+			// If already at minZoom, resolve immediately
+			if (currentZoom === minZoom) {
+				resolve();
+				return;
+			}
+
+			// Listen for zoomend event once
+			const onZoomEnd = () => {
+				map.off("zoomend", onZoomEnd);
+				resolve();
+			};
+			map.on("zoomend", onZoomEnd);
+
+			// Start zoom animation
+			map.setZoom(minZoom);
+		});
+	};
+
 	return {
 		init,
 		clearPoints,
@@ -277,5 +372,9 @@ export function useMapLayers() {
 		drawHeatPoints,
 		clearHeatLayer,
 		calculateRadiusFromZoom,
+		setHeatLayerOpacity,
+		showSelectedEstateMarker,
+		clearSelectedEstateMarker,
+		setZoomToMin,
 	};
 }
