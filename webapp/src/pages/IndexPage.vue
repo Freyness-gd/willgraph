@@ -22,7 +22,40 @@ const isPoiModeActive = ref(false);
 const handleEstateSelect = (estate: RealEstateDto) => {
 	console.log("Estate selected:", estate);
 	geoStore.selectEstate(estate);
+
+	// Show marker and dim heat layer
+	if (leafletMapRef.value) {
+		const lat = estate.address?.location?.latitude;
+		const lon = estate.address?.location?.longitude;
+		if (lat != null && lon != null) {
+			leafletMapRef.value.showSelectedEstateMarker(lat, lon);
+		}
+		leafletMapRef.value.setHeatLayerOpacity(0.3);
+	}
 };
+
+// Watch for selectedEstate changes to handle closing the overview
+watch(
+	() => geoStore.selectedEstate,
+	async (newEstate, oldEstate) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		if (!newEstate && oldEstate) {
+			// Estate overview was closed - restore heat layer and remove marker
+			leafletMapRef.value.setHeatLayerOpacity(1);
+			leafletMapRef.value.clearSelectedEstateMarker();
+		} else if (newEstate && oldEstate && newEstate.id !== oldEstate.id) {
+			// Different estate selected - update marker position
+			const lat = newEstate.address?.location?.latitude;
+			const lon = newEstate.address?.location?.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.showSelectedEstateMarker(lat, lon);
+			}
+		}
+	}
+);
 
 // Handle map click - add POI if mode is active, or place transport marker
 const handleMapClick = async (lat: number, lon: number) => {
@@ -72,6 +105,9 @@ watch(
 		leafletMapRef.value.clearPoints?.();
 
 		if (newPoints && newPoints.length > 0) {
+			// Zoom out to minZoom and wait for animation to complete before drawing heat points
+			// (heat point sizes are calculated based on current zoom level)
+			await leafletMapRef.value.setZoomToMin?.();
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
 		} else {

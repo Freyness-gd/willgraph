@@ -107,6 +107,36 @@ const clearTransportMarker = () => {
 };
 
 /**
+ * Sets the opacity of the heat layer
+ * @param opacity Value between 0 and 1
+ */
+const setHeatLayerOpacity = (opacity: number) => {
+	mapLayers.setHeatLayerOpacity(opacity);
+};
+
+/**
+ * Shows a red marker at the selected estate location
+ */
+const showSelectedEstateMarker = (lat: number, lon: number) => {
+	mapLayers.showSelectedEstateMarker(lat, lon);
+};
+
+/**
+ * Clears the selected estate marker
+ */
+const clearSelectedEstateMarker = () => {
+	mapLayers.clearSelectedEstateMarker();
+};
+
+/**
+ * Sets the map zoom to minimum zoom level
+ * @returns Promise that resolves when zoom animation is complete
+ */
+const setZoomToMin = (): Promise<void> => {
+	return mapLayers.setZoomToMin();
+};
+
+/**
  * Handles map click events and emits the coordinates
  */
 const handleMapClick = (event: LeafletMouseEvent) => {
@@ -124,6 +154,10 @@ defineExpose({
 	clearStationMarkers,
 	addTransportMarker,
 	clearTransportMarker,
+	setHeatLayerOpacity,
+	showSelectedEstateMarker,
+	clearSelectedEstateMarker,
+	setZoomToMin,
 });
 </script>
 
