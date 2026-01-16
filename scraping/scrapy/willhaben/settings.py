@@ -135,4 +135,4 @@ DOWNLOADER_MIDDLEWARES = {
 FEED_EXPORT_ENCODING = "utf-8"
 
 # Maximum number of requests (scrapes) to perform. 0 = unlimited
-SCRAPE_MAX = 30
+SCRAPE_MAX = 1000
