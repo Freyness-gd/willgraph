@@ -15,6 +15,8 @@ export function useMapLayers() {
 	let drawnLayerRef: L.FeatureGroup | null = null;
 	let heatPointMarkersRef: L.LayerGroup | null = null;
 	let selectedEstateMarkerRef: L.Marker | null = null;
+	let estateTransportCircleRef: L.Circle | null = null;
+	let estateTransportStationsRef: L.LayerGroup | null = null;
 
 	/**
 	 * Initialize the composable with a map reference
@@ -365,6 +367,108 @@ export function useMapLayers() {
 		});
 	};
 
+	/**
+	 * Show estate transport radius circle on the map
+	 * @param lat Latitude of the estate
+	 * @param lon Longitude of the estate
+	 * @param radius Radius in meters
+	 */
+	const showEstateTransportCircle = (lat: number, lon: number, radius: number) => {
+		if (!mapRef.value) return;
+
+		// Clear existing circle first
+		clearEstateTransportCircle();
+
+		// Create the radius circle with light green color
+		estateTransportCircleRef = L.circle([lat, lon], {
+			radius,
+			color: "#4CAF50",
+			fillColor: "#81C784",
+			fillOpacity: 0.2,
+			weight: 2,
+			dashArray: "5, 5",
+		});
+		estateTransportCircleRef.addTo(mapRef.value as any);
+	};
+
+	/**
+	 * Update estate transport circle radius (just redraw with new radius)
+	 * @param radius New radius in meters
+	 */
+	const updateEstateTransportCircleRadius = (lat: number, lon: number, radius: number) => {
+		showEstateTransportCircle(lat, lon, radius);
+	};
+
+	/**
+	 * Clear estate transport circle from the map
+	 */
+	const clearEstateTransportCircle = () => {
+		if (estateTransportCircleRef && mapRef.value) {
+			mapRef.value.removeLayer(estateTransportCircleRef);
+			estateTransportCircleRef = null;
+		}
+	};
+
+	/**
+	 * Show estate transport station markers on the map
+	 * @param stations Array of station objects with location
+	 */
+	const showEstateTransportStations = (
+		stations: Array<{ name: string; type: string; line?: string; location?: { latitude: number; longitude: number } }>
+	) => {
+		if (!mapRef.value) return;
+
+		// Clear existing station markers
+		clearEstateTransportStations();
+
+		estateTransportStationsRef = L.layerGroup();
+
+		const busIcon = L.divIcon({
+			className: "estate-station-marker",
+			html: `<div style="background: #4CAF50; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+					<path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+				</svg>
+			</div>`,
+			iconSize: [24, 24],
+			iconAnchor: [12, 12],
+		});
+
+		stations.forEach((station) => {
+			if (!station.location?.latitude || !station.location?.longitude) return;
+
+			const marker = L.marker([station.location.latitude, station.location.longitude], { icon: busIcon });
+			marker.bindPopup(`
+				<div style="min-width: 120px;">
+					<strong>${station.name}</strong><br/>
+					<span style="color: #666;">Type: ${station.type}</span><br/>
+					${station.line ? `<span style="color: #1976d2;">Line: ${station.line}</span>` : ""}
+				</div>
+			`);
+			estateTransportStationsRef?.addLayer(marker);
+		});
+
+		estateTransportStationsRef?.addTo(mapRef.value as any);
+	};
+
+	/**
+	 * Clear estate transport station markers from the map
+	 */
+	const clearEstateTransportStations = () => {
+		if (estateTransportStationsRef && mapRef.value) {
+			mapRef.value.removeLayer(estateTransportStationsRef);
+			estateTransportStationsRef = null;
+		}
+	};
+
+	/**
+	 * Clear all estate transport layers (circle and stations)
+	 */
+	const clearEstateTransport = () => {
+		clearEstateTransportCircle();
+		clearEstateTransportStations();
+	};
+
 	return {
 		init,
 		clearPoints,
@@ -376,5 +480,11 @@ export function useMapLayers() {
 		showSelectedEstateMarker,
 		clearSelectedEstateMarker,
 		setZoomToMin,
+		showEstateTransportCircle,
+		updateEstateTransportCircleRadius,
+		clearEstateTransportCircle,
+		showEstateTransportStations,
+		clearEstateTransportStations,
+		clearEstateTransport,
 	};
 }

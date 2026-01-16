@@ -30,6 +30,11 @@ export const useGeoStore = defineStore("geoStore", {
 		poiDistances: [] as PoiWithDistance[],
 		poiDistancesLoading: false,
 		showPoiDistances: false,
+		// Estate transport state
+		showEstateTransport: false,
+		estateTransportRadius: 100,
+		estateTransportStations: [] as StationDistanceDto[],
+		estateTransportLoading: false,
 		stationMarkers: [] as StationDistanceDto[],
 		transportMarker: null as { lat: number; lon: number; radius: number } | null,
 		transportMarkerModeActive: false,
@@ -215,12 +220,20 @@ export const useGeoStore = defineStore("geoStore", {
 			// Reset POI distances when selecting a new estate
 			this.poiDistances = [];
 			this.showPoiDistances = false;
+			// Reset estate transport
+			this.showEstateTransport = false;
+			this.estateTransportRadius = 100;
+			this.estateTransportStations = [];
 		},
 		// Clear selected estate
 		clearSelectedEstate() {
 			this.selectedEstate = null;
 			this.poiDistances = [];
 			this.showPoiDistances = false;
+			// Reset estate transport
+			this.showEstateTransport = false;
+			this.estateTransportRadius = 100;
+			this.estateTransportStations = [];
 		},
 		// Set POI list (called from MapOverlayForm)
 		setPoiList(pois: Point[]) {
@@ -239,6 +252,54 @@ export const useGeoStore = defineStore("geoStore", {
 			this.showPoiDistances = !this.showPoiDistances;
 			if (this.showPoiDistances) {
 				void this.calculatePoiDistances();
+			}
+		},
+		// Toggle estate transport panel
+		toggleEstateTransport() {
+			this.showEstateTransport = !this.showEstateTransport;
+			if (this.showEstateTransport) {
+				void this.fetchEstateTransportStations();
+			} else {
+				this.estateTransportStations = [];
+			}
+		},
+		// Set estate transport radius (called with debounce from UI)
+		setEstateTransportRadius(radius: number) {
+			this.estateTransportRadius = Math.min(Math.max(radius, 100), 1000);
+		},
+		// Fetch transport stations around the selected estate
+		async fetchEstateTransportStations() {
+			if (!this.selectedEstate?.address?.location) {
+				console.warn("No selected estate with location");
+				return;
+			}
+
+			const estateLat = this.selectedEstate.address.location.latitude;
+			const estateLon = this.selectedEstate.address.location.longitude;
+
+			if (estateLat == null || estateLon == null) {
+				console.warn("Selected estate has no coordinates");
+				return;
+			}
+
+			this.estateTransportLoading = true;
+
+			try {
+				console.log(
+					`Fetching stations around estate at [${estateLat}, ${estateLon}] with radius ${this.estateTransportRadius}m`
+				);
+				const stations = await transportService.findNearbyStationsDetailed(
+					estateLat,
+					estateLon,
+					this.estateTransportRadius
+				);
+				this.estateTransportStations = stations;
+				console.log("Fetched estate transport stations:", stations.length);
+			} catch (error) {
+				console.error("Error fetching estate transport stations:", error);
+				this.estateTransportStations = [];
+			} finally {
+				this.estateTransportLoading = false;
 			}
 		},
 		// Calculate distances from selected estate to all POIs
@@ -281,6 +342,63 @@ export const useGeoStore = defineStore("geoStore", {
 				console.error("Error calculating POI distances:", error);
 			} finally {
 				this.poiDistancesLoading = false;
+			}
+		},
+		// Calculate distance for a single new POI (delta calculation)
+		async calculateSinglePoiDistance(poi: Point) {
+			if (!this.showPoiDistances || !this.selectedEstate?.address?.location) {
+				return;
+			}
+
+			const estateLat = this.selectedEstate.address.location.latitude;
+			const estateLon = this.selectedEstate.address.location.longitude;
+
+			if (estateLat == null || estateLon == null) {
+				return;
+			}
+
+			try {
+				console.log("Calculating distance for new POI:", poi.id);
+				const distance = await regionService.calculateDistanceBetweenPoints(estateLat, estateLon, poi.lat, poi.lon);
+
+				const poiWithDistance: PoiWithDistance = {
+					...poi,
+					distance: distance ?? undefined,
+				};
+
+				// Add to existing distances
+				this.poiDistances = [...this.poiDistances, poiWithDistance];
+				console.log("Added POI distance:", poiWithDistance);
+			} catch (error) {
+				console.error("Error calculating single POI distance:", error);
+				// Still add the POI without distance
+				this.poiDistances = [...this.poiDistances, { ...poi, distance: undefined }];
+			}
+		},
+		// Remove POI from distances list
+		removePoiDistance(poiId: string) {
+			this.poiDistances = this.poiDistances.filter((p) => p.id !== poiId);
+		},
+		// Sync POI distances with POI list (handles additions and removals)
+		syncPoiDistances(newPoiList: Point[]) {
+			if (!this.showPoiDistances) {
+				return;
+			}
+
+			const currentIds = new Set(this.poiDistances.map((p) => p.id));
+			const newIds = new Set(newPoiList.map((p) => p.id));
+
+			// Find removed POIs
+			const removedIds = [...currentIds].filter((id) => !newIds.has(id));
+			if (removedIds.length > 0) {
+				this.poiDistances = this.poiDistances.filter((p) => !removedIds.includes(p.id));
+				console.log("Removed POI distances:", removedIds);
+			}
+
+			// Find new POIs that need distance calculation
+			const newPois = newPoiList.filter((p) => !currentIds.has(p.id));
+			for (const poi of newPois) {
+				void this.calculateSinglePoiDistance(poi);
 			}
 		},
 		async loadGeoData() {

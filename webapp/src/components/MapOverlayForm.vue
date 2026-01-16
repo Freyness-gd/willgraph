@@ -25,16 +25,65 @@
 			<q-icon class="row-icon" name="directions_bus" size="24px" />
 			<div class="slider-container">
 				<span class="slider-label">Transport</span>
-				<q-slider v-model="transport" :max="100" :min="0" class="overlay-slider" color="primary" label />
+				<q-slider
+					v-model="transport"
+					:label-value="transport + 'm'"
+					:max="1000"
+					:min="100"
+					:step="100"
+					class="overlay-slider"
+					color="primary"
+					label
+				/>
 			</div>
 		</div>
 
-		<!-- Amenities Slider -->
-		<div class="form-row">
-			<q-icon class="row-icon" name="local_convenience_store" size="24px" />
-			<div class="slider-container">
-				<span class="slider-label">Amenities</span>
-				<q-slider v-model="amenities" :max="100" :min="0" class="overlay-slider" color="primary" label />
+		<!-- Amenities Section -->
+		<div class="amenities-section">
+			<div class="amenities-header">
+				<q-icon class="row-icon" name="local_convenience_store" size="24px" />
+				<span class="amenities-title">Amenities</span>
+				<q-btn v-if="selectedAmenities.length < 3" color="primary" dense flat icon="add" round size="sm">
+					<q-tooltip>Add amenity category ({{ selectedAmenities.length }}/3)</q-tooltip>
+					<q-menu anchor="bottom right" self="top right">
+						<q-list dense style="min-width: 200px; max-height: 300px; overflow-y: auto">
+							<q-item
+								v-for="cat in availableCategories"
+								:key="cat.value"
+								v-close-popup
+								clickable
+								@click="addAmenityCategory(cat.value)"
+							>
+								<q-item-section avatar>
+									<q-icon :name="cat.icon" size="20px" />
+								</q-item-section>
+								<q-item-section>{{ cat.label }}</q-item-section>
+							</q-item>
+						</q-list>
+					</q-menu>
+				</q-btn>
+			</div>
+
+			<!-- Selected Amenity Sliders -->
+			<div v-if="selectedAmenities.length === 0" class="amenities-empty">Click + to add amenity categories (max 3)</div>
+			<div v-for="(amenity, index) in selectedAmenities" :key="amenity.category" class="amenity-slider-row">
+				<q-icon :name="getCategoryIcon(amenity.category)" class="amenity-icon" size="20px" />
+				<div class="amenity-slider-container">
+					<span class="amenity-label">{{ getCategoryLabel(amenity.category) }}</span>
+					<q-slider
+						v-model="amenity.radius"
+						:label-value="amenity.radius + 'm'"
+						:max="1000"
+						:min="100"
+						:step="100"
+						class="amenity-slider"
+						color="light-blue-6"
+						label
+					/>
+				</div>
+				<q-btn color="negative" dense flat icon="close" round size="xs" @click="removeAmenityCategory(index)">
+					<q-tooltip>Remove</q-tooltip>
+				</q-btn>
 			</div>
 		</div>
 
@@ -74,7 +123,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import searchService from "src/service/searchService";
 import type { Point } from "src/types/Point";
 import { useGeoStore } from "stores/geoStore";
@@ -85,8 +134,73 @@ const priceMin = ref<number | null>(null);
 const priceMax = ref<number | null>(null);
 const squareMetersMin = ref<number | null>(null);
 const squareMetersMax = ref<number | null>(null);
-const transport = ref(50);
-const amenities = ref(50);
+const transport = ref(500);
+
+// Amenity categories with icons
+const AMENITY_CATEGORIES = [
+	{ value: "pub", label: "Pub", icon: "sports_bar" },
+	{ value: "bar", label: "Bar", icon: "local_bar" },
+	{ value: "cafe", label: "Café", icon: "local_cafe" },
+	{ value: "restaurant", label: "Restaurant", icon: "restaurant" },
+	{ value: "fast_food", label: "Fast Food", icon: "fastfood" },
+	{ value: "gym", label: "Gym", icon: "fitness_center" },
+	{ value: "fitness_center", label: "Fitness Center", icon: "fitness_center" },
+	{ value: "swimming_pool", label: "Swimming Pool", icon: "pool" },
+	{ value: "library", label: "Library", icon: "local_library" },
+	{ value: "university", label: "University", icon: "school" },
+	{ value: "cinema", label: "Cinema", icon: "movie" },
+	{ value: "theatre", label: "Theatre", icon: "theater_comedy" },
+	{ value: "nightclub", label: "Nightclub", icon: "nightlife" },
+	{ value: "pharmacy", label: "Pharmacy", icon: "local_pharmacy" },
+	{ value: "doctors", label: "Doctors", icon: "medical_services" },
+	{ value: "dentist", label: "Dentist", icon: "dentistry" },
+	{ value: "supermarket", label: "Supermarket", icon: "local_grocery_store" },
+	{ value: "bakery", label: "Bakery", icon: "bakery_dining" },
+	{ value: "butcher", label: "Butcher", icon: "lunch_dining" },
+	{ value: "laundry", label: "Laundry", icon: "local_laundry_service" },
+	{ value: "dry_cleaning", label: "Dry Cleaning", icon: "dry_cleaning" },
+	{ value: "bicycle_rental", label: "Bicycle Rental", icon: "pedal_bike" },
+	{ value: "car_rental", label: "Car Rental", icon: "car_rental" },
+	{ value: "parking", label: "Parking", icon: "local_parking" },
+	{ value: "fuel", label: "Fuel Station", icon: "local_gas_station" },
+] as const;
+
+type AmenityCategory = (typeof AMENITY_CATEGORIES)[number]["value"];
+
+interface SelectedAmenity {
+	category: AmenityCategory;
+	radius: number;
+}
+
+// Selected amenities (max 3)
+const selectedAmenities = ref<SelectedAmenity[]>([]);
+
+// Get available categories (not already selected)
+const availableCategories = computed(() => {
+	const selectedCats = new Set(selectedAmenities.value.map((a) => a.category));
+	return AMENITY_CATEGORIES.filter((cat) => !selectedCats.has(cat.value));
+});
+
+// Add a new amenity category
+const addAmenityCategory = (category: AmenityCategory) => {
+	if (selectedAmenities.value.length >= 3) return;
+	selectedAmenities.value.push({ category, radius: 500 });
+};
+
+// Remove an amenity category
+const removeAmenityCategory = (index: number) => {
+	selectedAmenities.value.splice(index, 1);
+};
+
+// Get icon for a category
+const getCategoryIcon = (category: AmenityCategory): string => {
+	return AMENITY_CATEGORIES.find((c) => c.value === category)?.icon || "place";
+};
+
+// Get label for a category
+const getCategoryLabel = (category: AmenityCategory): string => {
+	return AMENITY_CATEGORIES.find((c) => c.value === category)?.label || category;
+};
 
 // POI Management
 const addPoiMode = ref(false);
@@ -118,8 +232,9 @@ const addPoi = (lat: number, lon: number): Point | null => {
 	};
 
 	poiList.value.push(newPoi);
-	// Sync with geoStore
+	// Sync with geoStore and trigger delta distance calculation
 	geoStore.setPoiList([...poiList.value]);
+	geoStore.syncPoiDistances([...poiList.value]);
 	return newPoi;
 };
 
@@ -127,8 +242,9 @@ const removePoi = (id: string) => {
 	const poi = poiList.value.find((p) => p.id === id);
 	if (poi) {
 		poiList.value = poiList.value.filter((p) => p.id !== id);
-		// Sync with geoStore
+		// Sync with geoStore and update distances
 		geoStore.setPoiList([...poiList.value]);
+		geoStore.syncPoiDistances([...poiList.value]);
 		emit("poi-removed", poi);
 	}
 };
@@ -140,12 +256,12 @@ const handleSearch = () => {
 		squareMetersMin: squareMetersMin.value,
 		squareMetersMax: squareMetersMax.value,
 		transport: transport.value,
-		amenities: amenities.value,
+		amenities: selectedAmenities.value,
 	});
 	console.log("Search result:", result);
 };
 
-defineExpose({ addPoi, poiList, addPoiMode });
+defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 </script>
 
 <style scoped>
@@ -220,6 +336,70 @@ defineExpose({ addPoi, poiList, addPoiMode });
 
 .search-btn {
 	min-width: 120px;
+}
+
+/* Amenities Section Styles */
+.amenities-section {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px;
+	background-color: rgba(255, 255, 255, 0.5);
+	border-radius: 6px;
+}
+
+.amenities-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.amenities-title {
+	flex: 1;
+	font-weight: 500;
+	color: #333;
+}
+
+.amenities-empty {
+	font-size: 12px;
+	color: #999;
+	font-style: italic;
+	text-align: center;
+	padding: 8px;
+}
+
+.amenity-slider-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	background-color: white;
+	border-radius: 4px;
+}
+
+.amenity-icon {
+	color: #03a9f4;
+	flex-shrink: 0;
+}
+
+.amenity-slider-container {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+}
+
+.amenity-label {
+	font-size: 11px;
+	color: #666;
+	margin-bottom: 2px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.amenity-slider {
+	width: 100%;
 }
 
 /* POI Section Styles */

@@ -34,29 +34,6 @@ const handleEstateSelect = (estate: RealEstateDto) => {
 	}
 };
 
-// Watch for selectedEstate changes to handle closing the overview
-watch(
-	() => geoStore.selectedEstate,
-	async (newEstate, oldEstate) => {
-		await nextTick();
-
-		if (!leafletMapRef.value) return;
-
-		if (!newEstate && oldEstate) {
-			// Estate overview was closed - restore heat layer and remove marker
-			leafletMapRef.value.setHeatLayerOpacity(1);
-			leafletMapRef.value.clearSelectedEstateMarker();
-		} else if (newEstate && oldEstate && newEstate.id !== oldEstate.id) {
-			// Different estate selected - update marker position
-			const lat = newEstate.address?.location?.latitude;
-			const lon = newEstate.address?.location?.longitude;
-			if (lat != null && lon != null) {
-				leafletMapRef.value.showSelectedEstateMarker(lat, lon);
-			}
-		}
-	}
-);
-
 // Handle map click - add POI if mode is active, or place transport marker
 const handleMapClick = async (lat: number, lon: number) => {
 	// Check if transport marker mode is active
@@ -164,6 +141,86 @@ watch(
 		}
 	},
 	{ deep: true }
+);
+
+// Watch for estate transport panel state to show/hide circle
+watch(
+	() => geoStore.showEstateTransport,
+	async (show) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		if (show && geoStore.selectedEstate?.address?.location) {
+			const lat = geoStore.selectedEstate.address.location.latitude;
+			const lon = geoStore.selectedEstate.address.location.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.showEstateTransportCircle?.(lat, lon, geoStore.estateTransportRadius);
+			}
+		} else {
+			leafletMapRef.value.clearEstateTransport?.();
+		}
+	}
+);
+
+// Watch for estate transport radius changes to update circle
+watch(
+	() => geoStore.estateTransportRadius,
+	async (newRadius) => {
+		await nextTick();
+
+		if (!leafletMapRef.value || !geoStore.showEstateTransport) return;
+
+		if (geoStore.selectedEstate?.address?.location) {
+			const lat = geoStore.selectedEstate.address.location.latitude;
+			const lon = geoStore.selectedEstate.address.location.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.updateEstateTransportCircleRadius?.(lat, lon, newRadius);
+			}
+		}
+	}
+);
+
+// Watch for estate transport stations to draw markers
+watch(
+	() => geoStore.estateTransportStations,
+	async (stations) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		leafletMapRef.value.clearEstateTransportStations?.();
+
+		if (stations && stations.length > 0 && geoStore.showEstateTransport) {
+			leafletMapRef.value.showEstateTransportStations?.(stations);
+		}
+	},
+	{ deep: true }
+);
+
+// Clear estate transport when estate is deselected
+watch(
+	() => geoStore.selectedEstate,
+	async (newEstate, oldEstate) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		if (!newEstate && oldEstate) {
+			// Estate overview was closed - restore heat layer, remove marker, and clear transport
+			leafletMapRef.value.setHeatLayerOpacity(1);
+			leafletMapRef.value.clearSelectedEstateMarker();
+			leafletMapRef.value.clearEstateTransport?.();
+		} else if (newEstate && oldEstate && newEstate.id !== oldEstate.id) {
+			// Different estate selected - update marker position and clear transport
+			leafletMapRef.value.clearEstateTransport?.();
+			const lat = newEstate.address?.location?.latitude;
+			const lon = newEstate.address?.location?.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.showSelectedEstateMarker(lat, lon);
+			}
+		}
+	}
 );
 </script>
 

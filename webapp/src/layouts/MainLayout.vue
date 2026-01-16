@@ -149,7 +149,14 @@
 				<div class="estate-tools">
 					<div class="tools-header">Tools</div>
 					<div class="tools-buttons">
-						<q-btn color="primary" dense icon="directions_bus" outline @click="onTransportTool">
+						<q-btn
+							:color="geoStore.showEstateTransport ? 'secondary' : 'primary'"
+							:loading="geoStore.estateTransportLoading"
+							dense
+							icon="directions_bus"
+							outline
+							@click="onTransportTool"
+						>
 							<q-tooltip>Transport in the area</q-tooltip>
 						</q-btn>
 						<q-btn color="primary" dense icon="storefront" outline @click="onAmenitiesTool">
@@ -165,6 +172,62 @@
 						>
 							<q-tooltip>POI distance</q-tooltip>
 						</q-btn>
+					</div>
+				</div>
+
+				<!-- Estate Transport Panel -->
+				<div v-if="geoStore.showEstateTransport" class="estate-transport-panel">
+					<div class="transport-panel-header">
+						<q-icon color="primary" name="directions_bus" size="18px" />
+						<span>Transport Stations</span>
+					</div>
+
+					<!-- Radius Slider -->
+					<div class="transport-radius-control">
+						<span class="radius-label">Radius: {{ geoStore.estateTransportRadius }}m</span>
+						<q-slider
+							v-model="estateTransportRadiusLocal"
+							:label-value="estateTransportRadiusLocal + 'm'"
+							:max="1000"
+							:min="100"
+							:step="100"
+							color="primary"
+							label
+							@update:model-value="onEstateTransportRadiusChange"
+						/>
+					</div>
+
+					<!-- Loading State -->
+					<div v-if="geoStore.estateTransportLoading" class="transport-loading">
+						<q-spinner color="primary" size="20px" />
+						<span>Loading stations...</span>
+					</div>
+
+					<!-- Empty State -->
+					<div v-else-if="geoStore.estateTransportStations.length === 0" class="transport-empty">
+						<span>No stations found in this radius.</span>
+					</div>
+
+					<!-- Stations List -->
+					<div v-else class="transport-stations-list">
+						<div
+							v-for="(station, index) in geoStore.estateTransportStations"
+							:key="index"
+							class="transport-station-item"
+						>
+							<q-icon color="green" name="directions_bus" size="16px" />
+							<div class="station-info">
+								<div class="station-name">{{ station.name }}</div>
+								<div class="station-details">
+									<span class="station-type">{{ station.type }}</span>
+									<span v-if="station.line" class="station-line">Line {{ station.line }}</span>
+								</div>
+								<div class="station-distance">
+									<span>{{ formatDistanceMeters(station.distanceInMeters) }}</span>
+									<span class="walking-time">🚶 {{ formatWalkingTime(station.walkingDurationInMinutes) }}</span>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 
@@ -295,6 +358,7 @@
 import { computed, ref, watch } from "vue";
 import { useGeoStore } from "stores/geoStore";
 import { QInput, useQuasar } from "quasar";
+import { useDebounceFn } from "@vueuse/core";
 
 const $q = useQuasar();
 
@@ -306,6 +370,31 @@ const search = ref("");
 const searchMenuOpen = ref(false);
 const searchInput = ref<QInput | null>(null);
 const draggedIndex = ref<number | null>(null);
+
+// Estate transport radius - local state for immediate UI feedback
+const estateTransportRadiusLocal = ref(100);
+
+// Debounced function to update radius and fetch stations
+const debouncedFetchStations = useDebounceFn(() => {
+	geoStore.setEstateTransportRadius(estateTransportRadiusLocal.value);
+	void geoStore.fetchEstateTransportStations();
+}, 1000);
+
+// Handler for radius slider change
+const onEstateTransportRadiusChange = (value: number) => {
+	estateTransportRadiusLocal.value = value;
+	debouncedFetchStations();
+};
+
+// Sync local radius with store when transport panel opens
+watch(
+	() => geoStore.showEstateTransport,
+	(show) => {
+		if (show) {
+			estateTransportRadiusLocal.value = geoStore.estateTransportRadius;
+		}
+	}
+);
 
 // Computed for transport radius (bound to store)
 const transportRadius = computed({
@@ -494,7 +583,7 @@ const formatWalkingTime = (value: number | null | undefined): string => {
 // Tool button handlers
 const onTransportTool = () => {
 	console.log("Transport in the area tool clicked");
-	// TODO: Implement transport search around estate location
+	geoStore.toggleEstateTransport();
 };
 
 const onAmenitiesTool = () => {
@@ -726,6 +815,117 @@ const onPoiDistanceTool = () => {
 	font-size: 11px;
 	color: #d32f2f;
 	font-style: italic;
+}
+
+/* Estate Transport Panel */
+.estate-transport-panel {
+	margin-top: 12px;
+	padding: 12px;
+	background-color: #e8f5e9;
+	border-radius: 6px;
+	border: 1px solid #c8e6c9;
+}
+
+.transport-panel-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #333;
+	margin-bottom: 10px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid #c8e6c9;
+}
+
+.transport-radius-control {
+	margin-bottom: 12px;
+}
+
+.radius-label {
+	font-size: 11px;
+	color: #666;
+	display: block;
+	margin-bottom: 4px;
+}
+
+.transport-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	color: #666;
+	padding: 8px 0;
+}
+
+.transport-empty {
+	font-size: 11px;
+	color: #888;
+	font-style: italic;
+	padding: 8px 0;
+}
+
+.transport-stations-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.transport-station-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 8px;
+	background-color: white;
+	border-radius: 4px;
+	border: 1px solid #e0e0e0;
+}
+
+.station-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.station-name {
+	font-size: 12px;
+	font-weight: 600;
+	color: #333;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.station-details {
+	display: flex;
+	gap: 8px;
+	font-size: 10px;
+	color: #666;
+	margin-top: 2px;
+}
+
+.station-type {
+	text-transform: capitalize;
+}
+
+.station-line {
+	color: #1976d2;
+	font-weight: 500;
+}
+
+.station-distance {
+	display: flex;
+	gap: 8px;
+	font-size: 11px;
+	margin-top: 4px;
+	color: #4caf50;
+	font-weight: 500;
+}
+
+.walking-time {
+	color: #666;
+	font-weight: normal;
 }
 
 /* Municipalities Panel */

@@ -137,6 +137,50 @@ const setZoomToMin = (): Promise<void> => {
 };
 
 /**
+ * Shows estate transport radius circle
+ */
+const showEstateTransportCircle = (lat: number, lon: number, radius: number) => {
+	mapLayers.showEstateTransportCircle(lat, lon, radius);
+};
+
+/**
+ * Updates estate transport circle radius
+ */
+const updateEstateTransportCircleRadius = (lat: number, lon: number, radius: number) => {
+	mapLayers.updateEstateTransportCircleRadius(lat, lon, radius);
+};
+
+/**
+ * Clears estate transport circle
+ */
+const clearEstateTransportCircle = () => {
+	mapLayers.clearEstateTransportCircle();
+};
+
+/**
+ * Shows estate transport station markers
+ */
+const showEstateTransportStations = (
+	stations: Array<{ name: string; type: string; line?: string; location?: { latitude: number; longitude: number } }>
+) => {
+	mapLayers.showEstateTransportStations(stations);
+};
+
+/**
+ * Clears estate transport station markers
+ */
+const clearEstateTransportStations = () => {
+	mapLayers.clearEstateTransportStations();
+};
+
+/**
+ * Clears all estate transport layers
+ */
+const clearEstateTransport = () => {
+	mapLayers.clearEstateTransport();
+};
+
+/**
  * Handles map click events and emits the coordinates
  */
 const handleMapClick = (event: LeafletMouseEvent) => {
@@ -158,6 +202,12 @@ defineExpose({
 	showSelectedEstateMarker,
 	clearSelectedEstateMarker,
 	setZoomToMin,
+	showEstateTransportCircle,
+	updateEstateTransportCircleRadius,
+	clearEstateTransportCircle,
+	showEstateTransportStations,
+	clearEstateTransportStations,
+	clearEstateTransport,
 });
 </script>
 
