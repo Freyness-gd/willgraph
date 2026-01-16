@@ -9,9 +9,9 @@ import org.springframework.data.neo4j.core.schema.Node;
 @Data
 @Builder
 public class AmenityTypeEntity {
-    @Id
-    private String name; //"Gym", "Supermarket"
+  @Id
+  private String name; //"Gym", "Supermarket"
 
-    private Integer score;
-    private Double maximumViableDistance;
+  //TODO add back when property error is fixed private Integer score;
+  //took out max distance as that will be part of the advanced query
 }

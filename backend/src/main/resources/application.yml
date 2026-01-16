@@ -11,3 +11,16 @@ spring:
   output:
     ansi:
       enabled: always
+
+# Application configuration for amenity search
+app:
+  amenity:
+    # Fixed bounding box for amenity search (Vienna city center area)
+    # Vienna: min_lat=48.1, min_lon=16.3, max_lat=48.3, max_lon=16.5
+    bounding-box:
+      min-lat: 48.1
+      min-lon: 16.3
+      max-lat: 48.3
+      max-lon: 16.5
+    # Enable/disable automatic amenity fetching on startup
+    auto-fetch-on-startup: true

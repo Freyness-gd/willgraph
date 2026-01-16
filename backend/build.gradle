@@ -69,6 +69,10 @@ dependencies {
     //csv stuff
     implementation("org.apache.commons:commons-csv:1.14.1")
 
+    // HTTP client for Overpass API calls
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'com.google.code.gson:gson:2.10.1'
+
     configurations.configureEach {
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
