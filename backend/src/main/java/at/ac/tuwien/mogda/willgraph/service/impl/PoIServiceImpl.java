@@ -11,6 +11,7 @@ import at.ac.tuwien.mogda.willgraph.repository.PoIRepository;
 import at.ac.tuwien.mogda.willgraph.service.PoIService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.geo.Point;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -65,13 +66,13 @@ public class PoIServiceImpl implements PoIService {
         PointOfInterestEntity poi = poiRepository.findById(poiId)
             .orElseThrow(() -> new IllegalArgumentException("POI not found with id: " + poiId));
 
-        Point poiLocation = poi.getLocation();
+        GeographicPoint2d poiLocation = poi.getLocation();
         if (poiLocation == null) {
             throw new IllegalStateException("POI has no location defined");
         }
 
         double distanceInMeters = calculateHaversineDistance(
-            poiLocation.getX(), poiLocation.getY(),
+            poiLocation.getLatitude(), poiLocation.getLongitude(),
             targetLatitude, targetLongitude
         );
 

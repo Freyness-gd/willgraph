@@ -1,4 +1,4 @@
-wpackage at.ac.tuwien.mogda.willgraph.controller.dto;
+package at.ac.tuwien.mogda.willgraph.controller.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

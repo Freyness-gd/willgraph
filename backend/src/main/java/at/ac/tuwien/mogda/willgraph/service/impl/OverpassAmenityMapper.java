@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.geo.Point;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -67,7 +68,7 @@ public class OverpassAmenityMapper {
     String name = firstNonBlank(tags.get("name"), tags.get("brand"), amenity, "Unnamed");
 
     // (lon, lat)
-    Point location = new Point(e.lon(), e.lat());
+    GeographicPoint2d location = new GeographicPoint2d(e.lat(), e.lon());
 
     return PointOfInterestEntity.builder()
         .name(name)
