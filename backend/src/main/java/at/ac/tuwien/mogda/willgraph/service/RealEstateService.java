@@ -1,6 +1,8 @@
 package at.ac.tuwien.mogda.willgraph.service;
 
+import at.ac.tuwien.mogda.willgraph.controller.dto.ListingSearchFilterDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateWithScoreDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
 import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 
@@ -14,4 +16,6 @@ public interface RealEstateService {
     List<RealEstateDto> findAll();
 
     List<StationDistanceDto> findStationsNearby(String id) throws NotFoundException;
+
+    List<RealEstateWithScoreDto> searchWithFilters(ListingSearchFilterDto request) throws NotFoundException;
 }
