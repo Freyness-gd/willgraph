@@ -14,7 +14,7 @@ import type { Point } from "src/types/Point";
 import type { RealEstateDto } from "src/types/RealEstate";
 
 const geoStore = useGeoStore();
-const leafletMapRef = ref<InstanceType<typeof LeafletMap> | null>(null);
+const leafletMapRef = ref<any>(null);
 const overlayFormRef = ref<InstanceType<typeof MapOverlayForm> | null>(null);
 const isPoiModeActive = ref(false);
 
@@ -198,7 +198,62 @@ watch(
 	{ deep: true }
 );
 
-// Clear estate transport when estate is deselected
+// Watch for estate amenities radius changes
+watch(
+	() => geoStore.estateAmenitiesRadius,
+	async (newRadius) => {
+		await nextTick();
+
+		if (!leafletMapRef.value || !geoStore.showEstateAmenities) return;
+
+		if (geoStore.selectedEstate?.address?.location) {
+			const lat = geoStore.selectedEstate.address.location.latitude;
+			const lon = geoStore.selectedEstate.address.location.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.updateEstateAmenitiesCircleRadius?.(newRadius);
+			}
+		}
+	}
+);
+
+// Watch for showEstateAmenities toggle
+watch(
+	() => geoStore.showEstateAmenities,
+	async (show) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		if (show && geoStore.selectedEstate?.address?.location) {
+			const lat = geoStore.selectedEstate.address.location.latitude;
+			const lon = geoStore.selectedEstate.address.location.longitude;
+			if (lat != null && lon != null) {
+				leafletMapRef.value.showEstateAmenitiesCircle?.(lat, lon, geoStore.estateAmenitiesRadius);
+			}
+		} else {
+			leafletMapRef.value.clearAllEstateAmenities?.();
+		}
+	}
+);
+
+// Watch for estate amenities to draw markers
+watch(
+	() => geoStore.estateAmenities,
+	async (amenities) => {
+		await nextTick();
+
+		if (!leafletMapRef.value) return;
+
+		leafletMapRef.value.clearEstateAmenities?.();
+
+		if (amenities && amenities.length > 0 && geoStore.showEstateAmenities) {
+			leafletMapRef.value.showEstateAmenities?.(amenities);
+		}
+	},
+	{ deep: true }
+);
+
+// Clear estate transport and amenities when estate is deselected
 watch(
 	() => geoStore.selectedEstate,
 	async (newEstate, oldEstate) => {
@@ -207,13 +262,15 @@ watch(
 		if (!leafletMapRef.value) return;
 
 		if (!newEstate && oldEstate) {
-			// Estate overview was closed - restore heat layer, remove marker, and clear transport
+			// Estate overview was closed - restore heat layer, remove marker, and clear transport/amenities
 			leafletMapRef.value.setHeatLayerOpacity(1);
 			leafletMapRef.value.clearSelectedEstateMarker();
 			leafletMapRef.value.clearEstateTransport?.();
+			leafletMapRef.value.clearAllEstateAmenities?.();
 		} else if (newEstate && oldEstate && newEstate.id !== oldEstate.id) {
-			// Different estate selected - update marker position and clear transport
+			// Different estate selected - update marker position and clear transport/amenities
 			leafletMapRef.value.clearEstateTransport?.();
+			leafletMapRef.value.clearAllEstateAmenities?.();
 			const lat = newEstate.address?.location?.latitude;
 			const lon = newEstate.address?.location?.longitude;
 			if (lat != null && lon != null) {

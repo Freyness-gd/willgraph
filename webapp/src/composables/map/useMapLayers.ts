@@ -17,6 +17,8 @@ export function useMapLayers() {
 	let selectedEstateMarkerRef: L.Marker | null = null;
 	let estateTransportCircleRef: L.Circle | null = null;
 	let estateTransportStationsRef: L.LayerGroup | null = null;
+	let estateAmenitiesRef: L.LayerGroup | null = null;
+	let estateAmenitiesCircleRef: L.Circle | null = null;
 
 	/**
 	 * Initialize the composable with a map reference
@@ -100,7 +102,7 @@ export function useMapLayers() {
 		munis.forEach((m) => {
 			try {
 				const rings = m.boundary.coordinates;
-				const outerRing = rings && rings[0] && rings[0][0] ? rings[0][0] : [];
+				const outerRing = rings?.[0]?.[0] ?? [];
 				const latLngs = outerRing.map((pos: [number, number]) => [pos[1], pos[0]] as [number, number]);
 
 				if (latLngs.length > 0) {
@@ -133,7 +135,7 @@ export function useMapLayers() {
 			drawnLayerRef.addTo(map as any);
 			try {
 				const bounds = drawnLayerRef.getBounds();
-				if (bounds && bounds.isValid()) {
+				if (bounds?.isValid()) {
 					map.fitBounds(bounds.pad(0.2));
 				}
 			} catch (err) {
@@ -393,6 +395,8 @@ export function useMapLayers() {
 
 	/**
 	 * Update estate transport circle radius (just redraw with new radius)
+	 * @param lat Latitude of the estate
+	 * @param lon Longitude of the estate
 	 * @param radius New radius in meters
 	 */
 	const updateEstateTransportCircleRadius = (lat: number, lon: number, radius: number) => {
@@ -469,6 +473,126 @@ export function useMapLayers() {
 		clearEstateTransportStations();
 	};
 
+	/**
+	 * Format amenity type for display
+	 * Special cases:
+	 *  - "doctors" => "Doctors"
+	 *  - "something_else" => "Something Else"
+	 */
+	const formatAmenityType = (amenityType?: string): string => {
+		if (!amenityType) return "Unknown";
+		const normalized = amenityType.trim().toLowerCase();
+		if (normalized === "doctors") return "Doctors";
+		if (normalized === "something_else") return "Something Else";
+		// fallback: replace underscores/dashes with spaces and title case each word
+		const words = normalized
+			.replaceAll(/[_-]+/g, " ")
+			.split(/\s+/)
+			.filter((s): s is string => s.length > 0);
+		return words.map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+	};
+
+	/**
+	 * Show estate amenity markers on the map
+	 * @param amenities Array of amenity objects with location
+	 */
+	const showEstateAmenities = (
+		amenities: Array<{ name: string; amenityType: string; location?: { latitude: number; longitude: number } }>
+	) => {
+		if (!mapRef.value) return;
+
+		// Clear existing amenity markers
+		clearEstateAmenities();
+
+		estateAmenitiesRef = L.layerGroup();
+
+		const amenityIcon = L.divIcon({
+			className: "estate-amenity-marker",
+			html: `<div style="background: #ff9800; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
+					<path d="M18.36 9l.6 3H5.04l.6-3h12.72M20 4H4v2h16V4zm0 3H4l-1 5v2h1v6h10v-6h4v6h2v-6h1v-2l-1-5zM6 18v-4h6v4H6z"/>
+				</svg>
+			</div>`,
+			iconSize: [24, 24],
+			iconAnchor: [12, 12],
+		});
+
+		amenities.forEach((amenity) => {
+			if (!amenity.location?.latitude || !amenity.location?.longitude) return;
+
+			const marker = L.marker([amenity.location.latitude, amenity.location.longitude], { icon: amenityIcon });
+			const categoryLabel = formatAmenityType(amenity.amenityType);
+			marker.bindPopup(`
+				<div style="min-width: 120px;">
+					<strong>${amenity.name}</strong><br/>
+					<span style="color: #666;">Category: ${categoryLabel}</span>
+				</div>
+			`);
+			estateAmenitiesRef?.addLayer(marker);
+		});
+
+		estateAmenitiesRef?.addTo(mapRef.value as any);
+	};
+
+	/**
+	 * Clear estate amenity markers from the map
+	 */
+	const clearEstateAmenities = () => {
+		if (estateAmenitiesRef && mapRef.value) {
+			mapRef.value.removeLayer(estateAmenitiesRef);
+			estateAmenitiesRef = null;
+		}
+	};
+
+	/**
+	 * Show estate amenities circle on the map
+	 * @param lat Latitude of the estate
+	 * @param lng Longitude of the estate
+	 * @param radius Radius in meters
+	 */
+	const showEstateAmenitiesCircle = (lat: number, lng: number, radius: number) => {
+		if (!mapRef.value) return;
+
+		// Remove existing circle if any
+		clearEstateAmenitiesCircle();
+
+		estateAmenitiesCircleRef = L.circle([lat, lng], {
+			radius,
+			color: "#ff9800",
+			fillColor: "#ffe0b2",
+			fillOpacity: 0.2,
+			weight: 2,
+		}).addTo(mapRef.value as any);
+	};
+
+	/**
+	 * Update estate amenities circle radius
+	 * @param radius New radius in meters
+	 */
+	const updateEstateAmenitiesCircleRadius = (radius: number) => {
+		if (estateAmenitiesCircleRef) {
+			estateAmenitiesCircleRef.setRadius(radius);
+		}
+	};
+
+	/**
+	 * Clear estate amenities circle from the map
+	 */
+	const clearEstateAmenitiesCircle = () => {
+		if (estateAmenitiesCircleRef && mapRef.value) {
+			mapRef.value.removeLayer(estateAmenitiesCircleRef);
+			estateAmenitiesCircleRef = null;
+		}
+	};
+
+	/**
+	 * Clear all estate amenity layers (circle and markers)
+	 */
+	const clearAllEstateAmenities = () => {
+		clearEstateAmenitiesCircle();
+		clearEstateAmenities();
+	};
+
 	return {
 		init,
 		clearPoints,
@@ -486,5 +610,11 @@ export function useMapLayers() {
 		showEstateTransportStations,
 		clearEstateTransportStations,
 		clearEstateTransport,
+		showEstateAmenities,
+		clearEstateAmenities,
+		showEstateAmenitiesCircle,
+		updateEstateAmenitiesCircleRadius,
+		clearEstateAmenitiesCircle,
+		clearAllEstateAmenities,
 	};
 }

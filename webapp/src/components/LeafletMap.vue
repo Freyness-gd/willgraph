@@ -181,6 +181,51 @@ const clearEstateTransport = () => {
 };
 
 /**
+ * Shows estate amenity markers
+ */
+const showEstateAmenities = (
+	amenities: Array<{ name: string; category: string; location?: { latitude: number; longitude: number } }>
+) => {
+	mapLayers.showEstateAmenities(amenities);
+};
+
+/**
+ * Clears estate amenity markers
+ */
+const clearEstateAmenities = () => {
+	mapLayers.clearEstateAmenities();
+};
+
+/**
+ * Shows the amenity circle around the estate
+ */
+const showEstateAmenitiesCircle = (lat: number, lon: number, radius: number) => {
+	mapLayers.showEstateAmenitiesCircle(lat, lon, radius);
+};
+
+/**
+ * Updates the amenity circle radius (keeps same semantics as transport helper)
+ */
+const updateEstateAmenitiesCircleRadius = (lat: number, lon: number, radius: number) => {
+	// mapLayers only needs radius to update the circle, but accept lat/lon for parity with transport API
+	mapLayers.updateEstateAmenitiesCircleRadius(radius);
+};
+
+/**
+ * Clears amenity circle
+ */
+const clearEstateAmenitiesCircle = () => {
+	mapLayers.clearEstateAmenitiesCircle();
+};
+
+/**
+ * Clear all amenity layers (circle + markers)
+ */
+const clearAllEstateAmenities = () => {
+	mapLayers.clearAllEstateAmenities();
+};
+
+/**
  * Handles map click events and emits the coordinates
  */
 const handleMapClick = (event: LeafletMouseEvent) => {
@@ -208,6 +253,12 @@ defineExpose({
 	showEstateTransportStations,
 	clearEstateTransportStations,
 	clearEstateTransport,
+	showEstateAmenities,
+	clearEstateAmenities,
+	showEstateAmenitiesCircle,
+	updateEstateAmenitiesCircleRadius,
+	clearEstateAmenitiesCircle,
+	clearAllEstateAmenities,
 });
 </script>
 

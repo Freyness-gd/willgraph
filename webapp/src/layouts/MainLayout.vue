@@ -159,7 +159,14 @@
 						>
 							<q-tooltip>Transport in the area</q-tooltip>
 						</q-btn>
-						<q-btn color="primary" dense icon="storefront" outline @click="onAmenitiesTool">
+						<q-btn
+							:color="geoStore.showEstateAmenities ? 'secondary' : 'primary'"
+							:loading="geoStore.estateAmenitiesLoading"
+							dense
+							icon="storefront"
+							outline
+							@click="onAmenitiesTool"
+						>
 							<q-tooltip>Amenities in the area</q-tooltip>
 						</q-btn>
 						<q-btn
@@ -225,6 +232,57 @@
 								<div class="station-distance">
 									<span>{{ formatDistanceMeters(station.distanceInMeters) }}</span>
 									<span class="walking-time">🚶 {{ formatWalkingTime(station.walkingDurationInMinutes) }}</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Estate Amenities Panel -->
+				<div v-if="geoStore.showEstateAmenities" class="estate-amenities-panel">
+					<div class="amenities-panel-header">
+						<q-icon color="orange" name="storefront" size="18px" />
+						<span>Nearby Amenities</span>
+					</div>
+
+					<!-- Radius Slider -->
+					<div class="amenities-radius-control">
+						<span class="radius-label">Radius: {{ geoStore.estateAmenitiesRadius }}m</span>
+						<q-slider
+							v-model="estateAmenitiesRadiusLocal"
+							:label-value="estateAmenitiesRadiusLocal + 'm'"
+							:max="1000"
+							:min="100"
+							:step="100"
+							color="orange"
+							label
+							@update:model-value="onEstateAmenitiesRadiusChange"
+						/>
+					</div>
+
+					<!-- Loading State -->
+					<div v-if="geoStore.estateAmenitiesLoading" class="amenities-loading">
+						<q-spinner color="orange" size="20px" />
+						<span>Loading amenities...</span>
+					</div>
+
+					<!-- Empty State -->
+					<div v-else-if="geoStore.estateAmenities.length === 0" class="amenities-empty">
+						<span>No amenities found in this radius.</span>
+					</div>
+
+					<!-- Amenities List -->
+					<div v-else class="amenities-list">
+						<div v-for="(amenity, index) in geoStore.estateAmenities" :key="index" class="amenity-item">
+							<q-icon color="orange" name="storefront" size="16px" />
+							<div class="amenity-info">
+								<div class="amenity-name">{{ amenity.name }}</div>
+								<div class="amenity-details">
+									<span class="amenity-category">{{ amenity.category }}</span>
+								</div>
+								<div class="amenity-distance">
+									<span>{{ formatDistanceMeters(amenity.distanceInMeters) }}</span>
+									<span class="walking-time">🚶 {{ formatWalkingTime(amenity.walkingDurationInMinutes) }}</span>
 								</div>
 							</div>
 						</div>
@@ -392,6 +450,31 @@ watch(
 	(show) => {
 		if (show) {
 			estateTransportRadiusLocal.value = geoStore.estateTransportRadius;
+		}
+	}
+);
+
+// Estate amenities radius - local state for immediate UI feedback
+const estateAmenitiesRadiusLocal = ref(500);
+
+// Debounced function to update radius and fetch amenities
+const debouncedFetchAmenities = useDebounceFn(() => {
+	geoStore.setEstateAmenitiesRadius(estateAmenitiesRadiusLocal.value);
+	void geoStore.fetchEstateAmenities();
+}, 1000);
+
+// Handler for amenities radius slider change
+const onEstateAmenitiesRadiusChange = (value: number) => {
+	estateAmenitiesRadiusLocal.value = value;
+	debouncedFetchAmenities();
+};
+
+// Sync local radius with store when amenities panel opens
+watch(
+	() => geoStore.showEstateAmenities,
+	(show) => {
+		if (show) {
+			estateAmenitiesRadiusLocal.value = geoStore.estateAmenitiesRadius;
 		}
 	}
 );
@@ -588,7 +671,7 @@ const onTransportTool = () => {
 
 const onAmenitiesTool = () => {
 	console.log("Amenities in the area tool clicked");
-	// TODO: Implement amenities search around estate location
+	geoStore.toggleEstateAmenities();
 };
 
 const onPoiDistanceTool = () => {
@@ -926,6 +1009,100 @@ const onPoiDistanceTool = () => {
 .walking-time {
 	color: #666;
 	font-weight: normal;
+}
+
+/* Estate Amenities Panel */
+.estate-amenities-panel {
+	margin-top: 12px;
+	padding: 12px;
+	background-color: #fff3e0;
+	border-radius: 6px;
+	border: 1px solid #ffe0b2;
+}
+
+.amenities-panel-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #333;
+	margin-bottom: 10px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid #ffe0b2;
+}
+
+.amenities-radius-control {
+	margin-bottom: 12px;
+}
+
+.amenities-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+	color: #666;
+	padding: 8px 0;
+}
+
+.amenities-empty {
+	font-size: 11px;
+	color: #888;
+	font-style: italic;
+	padding: 8px 0;
+}
+
+.amenities-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.amenity-item {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 8px;
+	background-color: white;
+	border-radius: 4px;
+	border: 1px solid #e0e0e0;
+}
+
+.amenity-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.amenity-name {
+	font-size: 12px;
+	font-weight: 600;
+	color: #333;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.amenity-details {
+	display: flex;
+	gap: 8px;
+	font-size: 10px;
+	color: #666;
+	margin-top: 2px;
+}
+
+.amenity-category {
+	text-transform: capitalize;
+}
+
+.amenity-distance {
+	display: flex;
+	gap: 8px;
+	font-size: 11px;
+	margin-top: 4px;
+	color: #ff9800;
+	font-weight: 500;
 }
 
 /* Municipalities Panel */

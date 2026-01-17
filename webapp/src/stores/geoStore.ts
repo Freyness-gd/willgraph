@@ -2,11 +2,13 @@ import { acceptHMRUpdate, defineStore } from "pinia";
 import type { Municipality } from "src/types/Municipality";
 import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
 import type { StationDistanceDto } from "src/types/Station";
+import type { PoiDistanceDto } from "src/types/Poi";
 import type { RealEstateDto } from "src/types/RealEstate";
 import type { Point, PoiWithDistance } from "src/types/Point";
 import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 import transportService from "src/service/transportService";
+import poiService from "src/service/poiService";
 
 const MAX_MUNICIPALITIES = 5;
 
@@ -35,6 +37,11 @@ export const useGeoStore = defineStore("geoStore", {
 		estateTransportRadius: 100,
 		estateTransportStations: [] as StationDistanceDto[],
 		estateTransportLoading: false,
+		// Estate amenities state
+		showEstateAmenities: false,
+		estateAmenitiesRadius: 500,
+		estateAmenities: [] as PoiDistanceDto[],
+		estateAmenitiesLoading: false,
 		stationMarkers: [] as StationDistanceDto[],
 		transportMarker: null as { lat: number; lon: number; radius: number } | null,
 		transportMarkerModeActive: false,
@@ -224,6 +231,10 @@ export const useGeoStore = defineStore("geoStore", {
 			this.showEstateTransport = false;
 			this.estateTransportRadius = 100;
 			this.estateTransportStations = [];
+			// Reset estate amenities
+			this.showEstateAmenities = false;
+			this.estateAmenitiesRadius = 500;
+			this.estateAmenities = [];
 		},
 		// Clear selected estate
 		clearSelectedEstate() {
@@ -234,6 +245,10 @@ export const useGeoStore = defineStore("geoStore", {
 			this.showEstateTransport = false;
 			this.estateTransportRadius = 100;
 			this.estateTransportStations = [];
+			// Reset estate amenities
+			this.showEstateAmenities = false;
+			this.estateAmenitiesRadius = 500;
+			this.estateAmenities = [];
 		},
 		// Set POI list (called from MapOverlayForm)
 		setPoiList(pois: Point[]) {
@@ -300,6 +315,50 @@ export const useGeoStore = defineStore("geoStore", {
 				this.estateTransportStations = [];
 			} finally {
 				this.estateTransportLoading = false;
+			}
+		},
+		// Toggle estate amenities panel
+		toggleEstateAmenities() {
+			this.showEstateAmenities = !this.showEstateAmenities;
+			if (this.showEstateAmenities) {
+				void this.fetchEstateAmenities();
+			} else {
+				this.estateAmenities = [];
+			}
+		},
+		// Set estate amenities radius (called with debounce from UI)
+		setEstateAmenitiesRadius(radius: number) {
+			this.estateAmenitiesRadius = Math.min(Math.max(radius, 100), 1000);
+		},
+		// Fetch amenities around the selected estate
+		async fetchEstateAmenities() {
+			if (!this.selectedEstate?.address?.location) {
+				console.warn("No selected estate with location");
+				return;
+			}
+
+			const estateLat = this.selectedEstate.address.location.latitude;
+			const estateLon = this.selectedEstate.address.location.longitude;
+
+			if (estateLat == null || estateLon == null) {
+				console.warn("Selected estate has no coordinates");
+				return;
+			}
+
+			this.estateAmenitiesLoading = true;
+
+			try {
+				console.log(
+					`Fetching amenities around estate at [${estateLat}, ${estateLon}] with radius ${this.estateAmenitiesRadius}m`
+				);
+				const amenities = await poiService.findPoIsNearby(estateLat, estateLon, this.estateAmenitiesRadius);
+				this.estateAmenities = amenities;
+				console.log("Fetched estate amenities:", amenities.length);
+			} catch (error) {
+				console.error("Error fetching estate amenities:", error);
+				this.estateAmenities = [];
+			} finally {
+				this.estateAmenitiesLoading = false;
 			}
 		},
 		// Calculate distances from selected estate to all POIs
