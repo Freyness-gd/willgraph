@@ -1,7 +1,17 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
+"""
+Data models for scraped real estate listings.
+
+This module defines standardized item structures for property listings from
+multiple sources (Willhaben, Immoscout). A unified schema (`BaseListingItem`)
+allows heterogeneous data integration while supporting source-specific fields.
+
+The items follow a lifecycle:
+1. Raw scraped values captured as strings during spider execution
+2. Pipelines normalize values (parse numbers, validate ranges)
+3. Enrichment pipelines add geocoding and deduplication
+
+See documentation: https://docs.scrapy.org/en/latest/topics/items.html
+"""
 
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -50,17 +60,35 @@ class BaseListingItem:
         return asdict(self)
 
 
+
+
 @dataclass
 class WillhabenItem(BaseListingItem):
-    """Willhaben listing with the unified schema used across sources."""
-
     source: str = field(init=False, default="willhaben")
+    """
+	Property listing from Willhaben platform.
+
+	Inherits unified schema from BaseListingItem with Willhaben-specific
+	source identifier. Additional Willhaben-specific fields can be added here.
+
+	Attributes:
+	    source (str): Always "willhaben" for listings from this platform.
+	"""
 
 
 @dataclass
 class ImmoscoutItem(BaseListingItem):
-    """Immoscout listing with the unified schema used across sources."""
-
     mega_listing: Optional[bool] = None  # flag for multi-unit listings
     source: str = field(init=False, default="immoscout")
+    """
+	Property listing from Immoscout platform.
+
+	Inherits unified schema from BaseListingItem with Immoscout-specific
+	source identifier. Includes platform-specific fields like mega_listing
+	for multi-unit properties.
+
+	Attributes:
+	    mega_listing (bool, optional): Flag indicating multi-unit/mega listing.
+	    source (str): Always "immoscout" for listings from this platform.
+	"""
 

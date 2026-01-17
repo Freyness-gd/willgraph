@@ -1,3 +1,20 @@
+"""
+Real estate web scraper CLI entry point.
+
+This module provides command-line interface to run one or multiple spiders
+concurrently to scrape property listings from Austrian real estate platforms.
+
+Examples:
+    Run all spiders:
+        $ python main.py --spiders all
+
+    Run specific spider:
+        $ python main.py --spiders willhaben
+
+    Run multiple spiders:
+        $ python main.py --spiders willhaben immoscout
+"""
+
 import argparse
 import os
 
