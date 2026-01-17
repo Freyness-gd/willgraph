@@ -20,6 +20,4 @@ public interface RegionRepository extends Neo4jRepository<RegionEntity, String> 
             "RETURN r " +
             "LIMIT $limit")
     List<RegionEntity> searchByNameOrIso(@Param("query") String query, @Param("limit") Integer limit);
-
-    //TODO: List<RegionEntity> findByAveragePricePerSqmLessThan(Double price);
 }

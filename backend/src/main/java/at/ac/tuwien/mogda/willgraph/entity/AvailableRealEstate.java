@@ -12,7 +12,6 @@ public class AvailableRealEstate {
     private Long id;
     private Double price;
     private Double area;
-    //TODO: Missing fields?
     @TargetNode
     private AddressEntity address;
 }

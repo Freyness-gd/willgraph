@@ -13,10 +13,8 @@ import org.springframework.data.neo4j.types.GeographicPoint2d;
 public class RegionEntity {
     @Id
     private String iso;
-    private String name; //TODO: Do we want to set it on prefix based on postal code?
+    private String name;
     private GeographicPoint2d center;
     private Geometry geometry;
-
-    //TODO: Might be calculated stat to be saved later on?
     private Double averagePricePerSqm;
 }

@@ -21,8 +21,6 @@ public class PointOfInterestEntity {
   private String id;
   private String name;
   private Integer score;
-  //TODO: Check if needed or already covered with Address? ->Probably fine like this because better for performance?
-  //TODO: Maybe change to GeographicPoint2D -> is inbuilt into neo4j which maps correctly lat / lon (See other entities)
   private GeographicPoint2d location; // (lat, lon)
 
   // Support for custom user-created amenities
