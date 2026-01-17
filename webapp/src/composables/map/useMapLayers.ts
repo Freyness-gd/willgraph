@@ -147,12 +147,12 @@ export function useMapLayers() {
 
 	/**
 	 * Draw heat points on the map
-	 * @param points Array of [latitude, longitude] pairs
+	 * @param points Array of [latitude, longitude, intensity] tuples
 	 * @param findEstatesAtCoordinates Function to find estates at coordinates
 	 * @param onEstateSelect Callback when an estate is selected from popup
 	 */
 	const drawHeatPoints = (
-		points: [number, number][],
+		points: [number, number, number][],
 		findEstatesAtCoordinates?: (lat: number, lon: number) => RealEstateWithScoreDto[],
 		onEstateSelect?: (estate: RealEstateDto) => void
 	) => {
@@ -206,16 +206,46 @@ export function useMapLayers() {
 			console.error("Failed to draw heat points:", err);
 		}
 
-		// Add clickable markers for each heat point
+		// Helper function to convert score (0-1) to color
+		// Red (worst, 0) → Blue (middle, 0.5) → Green (best, 1)
+		const scoreToColor = (score: number): string => {
+			// Clamp score between 0 and 1
+			const s = Math.max(0, Math.min(1, score));
+			if (s < 0.1) return "#ff0000"; // Bright red (worst)
+			if (s < 0.2) return "#ff3300"; // Red-orange
+			if (s < 0.3) return "#ff6600"; // Orange
+			if (s < 0.4) return "#9966ff"; // Purple (transition to blue)
+			if (s < 0.5) return "#6666ff"; // Blue-purple
+			if (s < 0.6) return "#0066ff"; // Blue (middle)
+			if (s < 0.7) return "#0099cc"; // Blue-cyan
+			if (s < 0.8) return "#00cc99"; // Cyan-green
+			if (s < 0.9) return "#00cc66"; // Green-cyan
+			return "#00ff00"; // Bright green (best)
+		};
+
+		// Ensure markers pane exists with higher z-index than heat pane
+		if (!map.getPane("markersPane")) {
+			const markersPane = map.createPane("markersPane");
+			markersPane.style.zIndex = "650"; // Above heat pane (default ~400) and above overlay pane (400)
+		}
+
+		// Add clickable markers for each heat point - with visible colors based on score
 		heatPointMarkersRef = L.layerGroup();
+		console.log("Creating", points.length, "colored markers");
 		points.forEach((point) => {
-			const [lat, lon] = point;
+			const [lat, lon, intensity] = point;
+			// Convert intensity back to score: intensity = 0.2 + score * 0.8, so score = (intensity - 0.2) / 0.8
+			const score = (intensity - 0.2) / 0.8;
+			const color = scoreToColor(score);
+
 			const marker = L.circleMarker([lat, lon], {
 				radius: 8,
-				fillColor: "transparent",
-				color: "transparent",
-				fillOpacity: 0,
-				weight: 0,
+				fillColor: color,
+				color: "#000000",
+				fillOpacity: 0.8,
+				weight: 1,
+				opacity: 1,
+				pane: "markersPane",
 			});
 
 			// Find estates at this location if function provided
@@ -509,19 +539,57 @@ export function useMapLayers() {
 
 		estateAmenitiesRef = L.layerGroup();
 
-		const amenityIcon = L.divIcon({
-			className: "estate-amenity-marker",
-			html: `<div style="background: #ff9800; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="16" height="16">
-					<path d="M18.36 9l.6 3H5.04l.6-3h12.72M20 4H4v2h16V4zm0 3H4l-1 5v2h1v6h10v-6h4v6h2v-6h1v-2l-1-5zM6 18v-4h6v4H6z"/>
-				</svg>
-			</div>`,
-			iconSize: [24, 24],
-			iconAnchor: [12, 12],
-		});
+		// Amenity type to icon and color mapping (avoiding green which is for transport)
+		const amenityConfig: Record<string, { icon: string; color: string }> = {
+			// Food & Drink - Orange/Amber tones
+			pub: { icon: "sports_bar", color: "#ff9800" },
+			bar: { icon: "local_bar", color: "#ff9800" },
+			cafe: { icon: "local_cafe", color: "#795548" },
+			restaurant: { icon: "restaurant", color: "#ff5722" },
+			fast_food: { icon: "fastfood", color: "#ff5722" },
+			// Fitness - Purple tones
+			gym: { icon: "fitness_center", color: "#9c27b0" },
+			fitness_center: { icon: "fitness_center", color: "#9c27b0" },
+			swimming_pool: { icon: "pool", color: "#2196f3" },
+			// Education & Culture - Blue tones
+			library: { icon: "local_library", color: "#3f51b5" },
+			university: { icon: "school", color: "#3f51b5" },
+			cinema: { icon: "movie", color: "#e91e63" },
+			theatre: { icon: "theater_comedy", color: "#e91e63" },
+			nightclub: { icon: "nightlife", color: "#9c27b0" },
+			// Health - Red/Pink tones
+			pharmacy: { icon: "local_pharmacy", color: "#f44336" },
+			doctors: { icon: "medical_services", color: "#f44336" },
+			dentist: { icon: "medical_services", color: "#f44336" },
+			// Shopping - Teal/Cyan tones
+			supermarket: { icon: "local_grocery_store", color: "#009688" },
+			bakery: { icon: "bakery_dining", color: "#795548" },
+			butcher: { icon: "lunch_dining", color: "#795548" },
+			// Services - Blue-grey tones
+			laundry: { icon: "local_laundry_service", color: "#607d8b" },
+			dry_cleaning: { icon: "dry_cleaning", color: "#607d8b" },
+			// Transport - avoid green, use blue
+			bicycle_rental: { icon: "pedal_bike", color: "#2196f3" },
+			car_rental: { icon: "car_rental", color: "#2196f3" },
+			parking: { icon: "local_parking", color: "#2196f3" },
+			fuel: { icon: "local_gas_station", color: "#ff9800" },
+		};
+
+		const defaultConfig = { icon: "place", color: "#ff9800" };
 
 		amenities.forEach((amenity) => {
 			if (!amenity.location?.latitude || !amenity.location?.longitude) return;
+
+			const config = amenityConfig[amenity.amenityType?.toLowerCase()] || defaultConfig;
+
+			const amenityIcon = L.divIcon({
+				className: "estate-amenity-marker",
+				html: `<div style="background: ${config.color}; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 2px solid white;">
+					<span class="material-icons" style="color: white; font-size: 16px;">${config.icon}</span>
+				</div>`,
+				iconSize: [28, 28],
+				iconAnchor: [14, 14],
+			});
 
 			const marker = L.marker([amenity.location.latitude, amenity.location.longitude], { icon: amenityIcon });
 			const categoryLabel = formatAmenityType(amenity.amenityType);

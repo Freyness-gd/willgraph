@@ -1,5 +1,6 @@
 package at.ac.tuwien.mogda.willgraph.repository;
 
+import at.ac.tuwien.mogda.willgraph.controller.dto.ListingWithScore;
 import at.ac.tuwien.mogda.willgraph.entity.ListingEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,9 +26,6 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
         @Param("maxLat") double maxLat);
 
     Page<ListingEntity> findAll(Pageable pageable);
-
-    @Query("MATCH (l:Listing {id: $listingId})-[:LOCATED_AT]->(a:Address) RETURN a.id")
-    Optional<String> findAddressIdByListingId(@Param("listingId") String listingId);
 
     @Query("""
                     MATCH (l:Listing)-[:LOCATED_AT]->(a:Address)
@@ -103,11 +101,11 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
             WITH l, amenityScore, poiScore
             WITH l, (amenityScore + poiScore) AS totalScore
             ORDER BY totalScore DESC
-            LIMIT 50
+            //May want to add limit here?
             OPTIONAL MATCH (l)-[r:LOCATED_AT]->(addr:Address)
-            RETURN DISTINCT l, r, addr
+            RETURN DISTINCT l AS listing, r, addr AS Address, totalScore as score
         """)
-    List<ListingEntity> searchListings(
+    List<ListingWithScore> searchListings(
         @Param("minLon") double minLon,
         @Param("minLat") double minLat,
         @Param("maxLon") double maxLon,
@@ -119,6 +117,9 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
         @Param("amenities") List<Map<String, Object>> amenities,
         @Param("customPois") List<Map<String, Object>> customPois
     );
+
+    @Query("MATCH (l:Listing {id: $listingId})-[:LOCATED_AT]->(a:Address) RETURN a.id")
+    Optional<String> findAddressIdByListingId(@Param("listingId") String listingId);
 
 
     //MATCH (l:Listing {id: $listingId})-[:LOCATED_AT]->(a:Address)

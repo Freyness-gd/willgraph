@@ -373,37 +373,6 @@
 					</div>
 				</div>
 			</div>
-
-			<!-- Transport Button -->
-			<div class="transport-section">
-				<q-btn
-					:color="transportButtonColor"
-					:label="transportButtonLabel"
-					:loading="geoStore.loadingStations"
-					dense
-					icon="directions_bus"
-					@click="toggleTransportMarker"
-				>
-					<q-tooltip>{{ transportButtonTooltip }}</q-tooltip>
-				</q-btn>
-
-				<!-- Radius input - shown only when in placement mode (before marker is placed) -->
-				<div v-if="geoStore.transportMarkerModeActive && !geoStore.transportMarker" class="radius-input">
-					<q-input
-						v-model.number="transportRadius"
-						:rules="[(val) => (val >= 1 && val <= 1000) || 'Max 1000m']"
-						dense
-						label="Radius (m)"
-						outlined
-						style="width: 180px"
-						type="number"
-					>
-						<template v-slot:prepend>
-							<q-icon name="radar" size="xs" />
-						</template>
-					</q-input>
-				</div>
-			</div>
 		</div>
 
 		<q-page-container>
@@ -430,7 +399,7 @@ const searchInput = ref<QInput | null>(null);
 const draggedIndex = ref<number | null>(null);
 
 // Estate transport radius - local state for immediate UI feedback
-const estateTransportRadiusLocal = ref(100);
+const estateTransportRadiusLocal = ref(300);
 
 // Debounced function to update radius and fetch stations
 const debouncedFetchStations = useDebounceFn(() => {
@@ -439,9 +408,10 @@ const debouncedFetchStations = useDebounceFn(() => {
 }, 1000);
 
 // Handler for radius slider change
-const onEstateTransportRadiusChange = (value: number) => {
+const onEstateTransportRadiusChange = (value: number | null) => {
+	if (value === null) return;
 	estateTransportRadiusLocal.value = value;
-	debouncedFetchStations();
+	void debouncedFetchStations();
 };
 
 // Sync local radius with store when transport panel opens
@@ -455,7 +425,7 @@ watch(
 );
 
 // Estate amenities radius - local state for immediate UI feedback
-const estateAmenitiesRadiusLocal = ref(500);
+const estateAmenitiesRadiusLocal = ref(300);
 
 // Debounced function to update radius and fetch amenities
 const debouncedFetchAmenities = useDebounceFn(() => {
@@ -464,9 +434,10 @@ const debouncedFetchAmenities = useDebounceFn(() => {
 }, 1000);
 
 // Handler for amenities radius slider change
-const onEstateAmenitiesRadiusChange = (value: number) => {
+const onEstateAmenitiesRadiusChange = (value: number | null) => {
+	if (value === null) return;
 	estateAmenitiesRadiusLocal.value = value;
-	debouncedFetchAmenities();
+	void debouncedFetchAmenities();
 };
 
 // Sync local radius with store when amenities panel opens
@@ -478,12 +449,6 @@ watch(
 		}
 	}
 );
-
-// Computed for transport radius (bound to store)
-const transportRadius = computed({
-	get: () => geoStore.pendingTransportRadius,
-	set: (val: number) => geoStore.setPendingTransportRadius(val),
-});
 
 // Computed - selectedMunicipalities from store
 const selectedMunicipalities = computed(() => geoStore.selectedMunicipalities);
@@ -594,29 +559,6 @@ const onDragEnd = () => {
 	draggedIndex.value = null;
 };
 
-// Transport marker computed properties
-const transportButtonColor = computed(() => {
-	if (geoStore.transportMarker) return "negative"; // Red when marker is placed (click to remove)
-	if (geoStore.transportMarkerModeActive) return "warning"; // Orange when in placement mode
-	return "primary"; // Blue default
-});
-
-const transportButtonLabel = computed(() => {
-	if (geoStore.transportMarker) return "Remove Marker";
-	if (geoStore.transportMarkerModeActive) return "Click Map...";
-	return "Add Transport";
-});
-
-const transportButtonTooltip = computed(() => {
-	if (geoStore.transportMarker) return "Click to remove transport marker and stations";
-	if (geoStore.transportMarkerModeActive) return "Click on the map to place transport marker";
-	return "Click to enable transport marker placement";
-});
-
-const toggleTransportMarker = () => {
-	geoStore.toggleTransportMarkerMode();
-};
-
 // Estate overview methods
 const closeEstateOverview = () => {
 	geoStore.clearSelectedEstate();
@@ -686,6 +628,7 @@ const onPoiDistanceTool = () => {
 	position: fixed;
 	top: 80px;
 	left: 20px;
+	bottom: 20px;
 	z-index: 1001;
 	padding: 16px;
 	background-color: rgba(255, 255, 255, 0.95);
@@ -694,8 +637,9 @@ const onPoiDistanceTool = () => {
 	min-width: 300px;
 	max-width: 340px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	max-height: calc(100vh - 200px);
 	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 }
 
 .estate-header {
@@ -705,6 +649,7 @@ const onPoiDistanceTool = () => {
 	margin-bottom: 12px;
 	padding-bottom: 8px;
 	border-bottom: 2px solid #1976d2;
+	flex-shrink: 0;
 }
 
 .estate-icon {
@@ -724,6 +669,8 @@ const onPoiDistanceTool = () => {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+	flex: 1;
+	overflow-y: auto;
 }
 
 .estate-row {
@@ -1204,19 +1151,5 @@ const onPoiDistanceTool = () => {
 	display: flex;
 	gap: 2px;
 	flex-shrink: 0;
-}
-
-.transport-section {
-	margin-top: 12px;
-	padding-top: 12px;
-	border-top: 1px solid rgba(0, 0, 0, 0.1);
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-}
-
-.radius-input {
-	margin-top: 4px;
 }
 </style>

@@ -124,6 +124,7 @@ watch(
 			// Wait for pan/zoom animation to complete (500ms duration + buffer)
 			await new Promise((resolve) => setTimeout(resolve, 600));
 
+			leafletMapRef.value.panTo?.(viennaCenterLat, viennaCenterLng, 12);
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
 		} else {
@@ -249,7 +250,7 @@ watch(
 			const lat = geoStore.selectedEstate.address.location.latitude;
 			const lon = geoStore.selectedEstate.address.location.longitude;
 			if (lat != null && lon != null) {
-				leafletMapRef.value.updateEstateAmenitiesCircleRadius?.(newRadius);
+				leafletMapRef.value.updateEstateAmenitiesCircleRadius?.(lat, lon, newRadius);
 			}
 		}
 	}
