@@ -20,7 +20,7 @@ class ImmoscoutSpider(scrapy.Spider):
             "willhaben.pipelines.ImmoscoutPipeline": 300,
             "willhaben.pipelines.ValidationPipeline": 350,  # runs after cleaning
             "willhaben.pipelines.DeduplicationPipeline": 375,
-            #"willhaben.pipelines.Neo4jPipeline": 400,  # first 300 is done then 400 as 400 > 300
+            "willhaben.pipelines.Neo4jPipeline": 400,  # first 300 is done then 400 as 400 > 300
         },
         "PLAYWRIGHT_LAUNCH_OPTIONS": {
             "headless": False,

@@ -31,6 +31,17 @@ services:
     volumes:
       - ../scraping/transport/gtfs_data:/app/gtfs_data
 
+  scraping:
+    build: ../scraping
+    ports:
+      - "6080:6080"   # noVNC web interface
+      - "5900:5900"   # VNC port
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    volumes:
+      - ../scraping/scrapingOutput:/app/scrapingOutput
+
   backend:
     build: .
     ports:
