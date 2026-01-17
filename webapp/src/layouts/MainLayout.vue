@@ -531,7 +531,7 @@ watch(search, (value) => {
 });
 
 // Methods
-const addMunicipality = async (name: string) => {
+const addMunicipality = (name: string) => {
 	if (geoStore.isMunicipalitySaved(name)) {
 		geoStore.removeSelectedMunicipality(name);
 		clearSearch();
@@ -549,7 +549,7 @@ const addMunicipality = async (name: string) => {
 	}
 
 	// Use the new action that fetches region points
-	await geoStore.addRegionAndFetchPoints(name);
+	geoStore.addSelectedMunicipality(name);
 	clearSearch();
 };
 
@@ -700,7 +700,7 @@ const onPoiDistanceTool = () => {
 
 .estate-header {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 8px;
 	margin-bottom: 12px;
 	padding-bottom: 8px;
@@ -716,9 +716,8 @@ const onPoiDistanceTool = () => {
 	font-weight: 600;
 	font-size: 14px;
 	color: #333;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	word-wrap: break-word;
+	white-space: normal;
 }
 
 .estate-content {
@@ -729,7 +728,7 @@ const onPoiDistanceTool = () => {
 
 .estate-row {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 8px;
 	font-size: 12px;
 }
@@ -748,9 +747,8 @@ const onPoiDistanceTool = () => {
 .estate-value {
 	color: #333;
 	font-weight: 500;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	word-wrap: break-word;
+	white-space: normal;
 }
 
 .estate-value.price {

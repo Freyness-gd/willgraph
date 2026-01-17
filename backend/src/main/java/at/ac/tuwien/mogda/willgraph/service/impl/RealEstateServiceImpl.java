@@ -105,12 +105,35 @@ public class RealEstateServiceImpl implements RealEstateService {
             weightedAmenities,
             weightedPois
         );
-        return results.stream()
-            .map(listing -> {
-                double score = 1.0;
-                return new RealEstateWithScoreDto(toDto(listing), score);
-            })
-            .toList();
+
+        List<RealEstateWithScoreDto> realEstateWithScoreDtos = results.stream()
+                .map(listing -> {
+                    // TODO: Calculate score
+                    double score = 1.0;
+                    return new RealEstateWithScoreDto(toDto(listing), score);
+                })
+                .toList();
+
+        double minScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).min().orElse(0.0);
+        double maxScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).max().orElse(0.0);
+
+        // If all scores are equal (or list empty), assign 1.0 to every item to indicate equal relative score.
+        if (!realEstateWithScoreDtos.isEmpty()) {
+            double range = maxScore - minScore;
+            for (RealEstateWithScoreDto dto : realEstateWithScoreDtos) {
+                Double rawScore = dto.getScore();
+                double value = rawScore != null ? rawScore : 0.0;
+                double normalized;
+                if (range <= 0.0) {
+                    normalized = 1.0;
+                } else {
+                    normalized = (value - minScore) / range;
+                }
+                dto.setScore(normalized);
+            }
+        }
+
+        return realEstateWithScoreDtos;
     }
 
     @Override

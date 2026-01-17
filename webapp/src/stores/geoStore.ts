@@ -9,6 +9,7 @@ import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 import transportService from "src/service/transportService";
 import poiService from "src/service/poiService";
+import type { ListingSearchFilterDto, RealEstateWithScoreDto } from "src/types/dto";
 
 const MAX_MUNICIPALITIES = 5;
 
@@ -24,8 +25,7 @@ export const useGeoStore = defineStore("geoStore", {
 			longitude: number;
 			intensity: number;
 		}>,
-		regionHeatPoints: [] as [number, number][],
-		regionEstatesMap: new Map<string, RealEstateDto[]>(),
+		regionEstatesMap: new Map<string, RealEstateWithScoreDto[]>(),
 		selectedEstate: null as RealEstateDto | null,
 		// POI state
 		poiList: [] as Point[],
@@ -60,6 +60,22 @@ export const useGeoStore = defineStore("geoStore", {
 		},
 		selectedMunicipalitiesCount(): number {
 			return this.selectedMunicipalities.length;
+		},
+		getRealEstatesMap(): Map<string, RealEstateWithScoreDto[]> {
+			return this.regionEstatesMap;
+		},
+		// Computed getter for heat points from all regions in the map
+		regionHeatPoints(): [number, number][] {
+			const allPoints: [number, number][] = [];
+			this.regionEstatesMap.forEach((estates) => {
+				estates.forEach((estateWithScore) => {
+					const estate = estateWithScore.listing;
+					if (estate.address?.location?.latitude != null && estate.address?.location?.longitude != null) {
+						allPoints.push([estate.address.location.latitude, estate.address.location.longitude]);
+					}
+				});
+			});
+			return allPoints;
 		},
 	},
 
@@ -113,6 +129,53 @@ export const useGeoStore = defineStore("geoStore", {
 		reorderMunicipalities(newOrder: string[]) {
 			this.selectedMunicipalities = newOrder;
 		},
+		// Fetch estates for all selected regions in parallel
+		async fetchEstatesForAllSelectedRegions() {
+			if (this.selectedMunicipalities.length === 0) {
+				console.log("No regions selected");
+				return;
+			}
+
+			this.loading = true;
+			console.log("Fetching estates for all selected regions:", this.selectedMunicipalities);
+
+			// Create promises for all regions in parallel
+			const fetchPromises = this.selectedMunicipalities.map(async (regionName) => {
+				const filter: ListingSearchFilterDto = {
+					listing: {
+						minArea: null,
+						maxPrice: null,
+						minPrice: null,
+						region: regionName,
+					},
+					transport: null,
+					amenityPriorities: null,
+					poiPriorities: null,
+				};
+				const estates = await regionService.searchEstatesWithFilters(filter);
+				return { regionName, estates };
+			});
+
+			try {
+				// Wait for all requests to complete
+				const results = await Promise.all(fetchPromises);
+
+				// Save all results in the map - build a new map for reactivity
+				const newMap = new Map(this.regionEstatesMap);
+				for (const { regionName, estates } of results) {
+					console.log(`Fetched ${estates.length} estates for region:`, regionName);
+					newMap.set(regionName, estates);
+				}
+				this.regionEstatesMap = newMap;
+
+				// Recalculate heat points from all regions
+				this.recalculateHeatPoints();
+			} catch (error) {
+				console.error("Error fetching estates for regions:", error);
+			} finally {
+				this.loading = false;
+			}
+		},
 		async addRegionAndFetchPoints(regionName: string) {
 			console.log("addRegionAndFetchPoints called for:", regionName);
 			const added = this.addSelectedMunicipality(regionName);
@@ -120,12 +183,23 @@ export const useGeoStore = defineStore("geoStore", {
 				return;
 			}
 
-			// Fetch real estates for region
-			const estates = await regionService.fetchRealEstatesInRegion(regionName);
+			// Fetch real estates for region using search endpoint
+			const filter: ListingSearchFilterDto = {
+				listing: {
+					minArea: null,
+					maxPrice: null,
+					minPrice: null,
+					region: regionName,
+				},
+				transport: null,
+				amenityPriorities: null,
+				poiPriorities: null,
+			};
+			const estates = await regionService.searchEstatesWithFilters(filter);
 			console.log("Fetched estates for region:", regionName, estates.length);
 
-			// Save estates in map
-			this.regionEstatesMap.set(regionName, estates);
+			// Save estates in map using setRegionEstates for reactivity
+			this.setRegionEstates(regionName, estates);
 
 			// Recalculate heat points from all regions
 			this.recalculateHeatPoints();
@@ -134,32 +208,44 @@ export const useGeoStore = defineStore("geoStore", {
 		recalculateHeatPoints() {
 			const allPoints: [number, number][] = [];
 			this.regionEstatesMap.forEach((estates) => {
-				estates.forEach((estate) => {
+				estates.forEach((estateWithScore) => {
+					const estate = estateWithScore.listing;
 					if (estate.address?.location?.latitude != null && estate.address?.location?.longitude != null) {
 						allPoints.push([estate.address.location.latitude, estate.address.location.longitude]);
 					}
 				});
 			});
-			this.regionHeatPoints = allPoints;
 			console.log("Recalculated heat points:", allPoints.length);
+			// Trigger reactive update by replacing the map reference
+			this.regionEstatesMap = new Map(this.regionEstatesMap);
+		},
+		// Set region estates (replaces map to ensure reactivity)
+		setRegionEstates(regionName: string, estates: RealEstateWithScoreDto[]) {
+			const newMap = new Map(this.regionEstatesMap);
+			newMap.set(regionName, estates);
+			this.regionEstatesMap = newMap;
+		},
+		// Clear all region estates (ensures reactivity)
+		clearAllRegionEstates() {
+			this.regionEstatesMap = new Map();
 		},
 		// Get all estates from all regions as a flat array
-		getAllEstates(): RealEstateDto[] {
-			const allEstates: RealEstateDto[] = [];
+		getAllEstates(): RealEstateWithScoreDto[] {
+			const allEstates: RealEstateWithScoreDto[] = [];
 			this.regionEstatesMap.forEach((estates) => {
 				allEstates.push(...estates);
 			});
 			return allEstates;
 		},
 		// Find estate at specific coordinates
-		findEstateAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateDto | null {
+		findEstateAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateWithScoreDto | null {
 			for (const estates of this.regionEstatesMap.values()) {
-				for (const estate of estates) {
-					const estateLat = estate.address?.location?.latitude;
-					const estateLon = estate.address?.location?.longitude;
+				for (const estateWithScore of estates) {
+					const estateLat = estateWithScore.listing.address?.location?.latitude;
+					const estateLon = estateWithScore.listing.address?.location?.longitude;
 					if (estateLat != null && estateLon != null) {
 						if (Math.abs(estateLat - lat) < tolerance && Math.abs(estateLon - lon) < tolerance) {
-							return estate;
+							return estateWithScore;
 						}
 					}
 				}
@@ -167,15 +253,15 @@ export const useGeoStore = defineStore("geoStore", {
 			return null;
 		},
 		// Find all estates at specific coordinates (there may be multiple at same location)
-		findEstatesAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateDto[] {
-			const found: RealEstateDto[] = [];
+		findEstatesAtCoordinates(lat: number, lon: number, tolerance: number = 0.0001): RealEstateWithScoreDto[] {
+			const found: RealEstateWithScoreDto[] = [];
 			for (const estates of this.regionEstatesMap.values()) {
-				for (const estate of estates) {
-					const estateLat = estate.address?.location?.latitude;
-					const estateLon = estate.address?.location?.longitude;
+				for (const estateWithScore of estates) {
+					const estateLat = estateWithScore.listing.address?.location?.latitude;
+					const estateLon = estateWithScore.listing.address?.location?.longitude;
 					if (estateLat != null && estateLon != null) {
 						if (Math.abs(estateLat - lat) < tolerance && Math.abs(estateLon - lon) < tolerance) {
-							found.push(estate);
+							found.push(estateWithScore);
 						}
 					}
 				}

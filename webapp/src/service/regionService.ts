@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { RealEstateDto } from "src/types/RealEstate";
 import type { PointToPointDistanceDto } from "src/types/Point";
+import type { ListingSearchFilterDto, RealEstateWithScoreDto } from "src/types/dto";
 
 const regionService = {
 	/**
@@ -75,7 +76,7 @@ const regionService = {
 		console.log("calculateDistanceBetweenPoints called:", { fromLat, fromLon, toLat, toLon });
 
 		try {
-			const response = await axios.get<PointToPointDistanceDto>("http://localhost:8080/pois/distance", {
+			const response = await axios.get<PointToPointDistanceDto>("http://localhost:8080/api/poi/distance", {
 				params: {
 					fromLat,
 					fromLon,
@@ -89,6 +90,21 @@ const regionService = {
 		} catch (error) {
 			console.error("Error calculating distance between points:", error);
 			return null;
+		}
+	},
+
+	/**
+	 * Search estates using complex filters. Sends ListingSearchFilterDto in POST body to /api/estate/search
+	 */
+	async searchEstatesWithFilters(filter: ListingSearchFilterDto): Promise<RealEstateWithScoreDto[]> {
+		console.log("searchEstatesWithFilters called with:", filter);
+		try {
+			const response = await axios.post<RealEstateWithScoreDto[]>("http://localhost:8080/api/estate/search", filter);
+			console.log("Search API Response:", response.data);
+			return response.data;
+		} catch (error) {
+			console.error("Error searching estates with filters:", error);
+			return [];
 		}
 	},
 };

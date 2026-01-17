@@ -19,12 +19,14 @@ export const PopupBuilder = {
 				const title = estate.title || "Untitled";
 				const price = estate.price !== null && estate.price !== undefined ? `€${estate.price.toLocaleString()}` : "N/A";
 				const area = estate.livingArea !== null && estate.livingArea !== undefined ? `${estate.livingArea}m²` : "";
+				const address = estate.address?.fullAddressString || estate.address?.street || "";
 				return `
 					<div class="estate-popup-item" data-estate-index="${index}" style="padding: 8px 6px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.2s; border-radius: 4px;">
-						<div style="display: flex; justify-content: space-between; align-items: center;">
-							<strong style="font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${title}</strong>
-							<span style="color: #1976d2; font-size: 11px; margin-left: 8px;">▶</span>
+						<div style="display: flex; justify-content: space-between; align-items: flex-start;">
+							<strong style="font-size: 12px; flex: 1; word-wrap: break-word; white-space: normal;">${title}</strong>
+							<span style="color: #1976d2; font-size: 11px; margin-left: 8px; flex-shrink: 0;">▶</span>
 						</div>
+						${address ? `<div style="margin-top: 4px; font-size: 11px; color: #666; word-wrap: break-word; white-space: normal;">${address}</div>` : ""}
 						<div style="margin-top: 4px;">
 							<span style="color: #1976d2; font-weight: bold;">${price}</span>
 							${area ? `<span style="color: #666; margin-left: 8px;">${area}</span>` : ""}
@@ -35,7 +37,7 @@ export const PopupBuilder = {
 			.join("");
 
 		return `
-			<div class="estate-popup-container" style="min-width: 220px; max-width: 320px; max-height: 320px; overflow-y: auto;">
+			<div class="estate-popup-container" style="min-width: 220px; max-width: 400px; max-height: 400px; overflow-y: auto;">
 				<strong style="font-size: 14px; display: block; margin-bottom: 8px;">Real Estate Listings (${estates.length})</strong>
 				<div style="font-size: 11px; color: #666; margin-bottom: 8px;">Click to view details</div>
 				<div class="estate-popup-list">

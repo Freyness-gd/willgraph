@@ -10,7 +10,7 @@ const poiService = {
 		console.log("findPoIsNearby called for lat:", lat, "lng:", lng, "radius:", radius);
 
 		try {
-			const response = await axios.get<PoiDistanceDto[]>("http://localhost:8080/pois/nearby", {
+			const response = await axios.get<PoiDistanceDto[]>("http://localhost:8080/api/poi/nearby", {
 				params: {
 					lat,
 					lng,

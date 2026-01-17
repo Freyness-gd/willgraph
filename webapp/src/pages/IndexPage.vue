@@ -78,17 +78,15 @@ watch(
 			return;
 		}
 
-		// Always clear existing points first, then draw new ones if any
-		leafletMapRef.value.clearPoints?.();
-
 		if (newPoints && newPoints.length > 0) {
 			// Zoom out to minZoom and wait for animation to complete before drawing heat points
 			// (heat point sizes are calculated based on current zoom level)
+			leafletMapRef.value.clearPoints?.();
 			await leafletMapRef.value.setZoomToMin?.();
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
 		} else {
-			console.log("No heat points to draw, map cleared");
+			console.log("No heat points to draw");
 		}
 	},
 	{ deep: true }

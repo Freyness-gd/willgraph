@@ -1,6 +1,7 @@
 import { ref } from "vue";
 import L, { type Map as LeafletMap } from "leaflet";
 import type { Municipality } from "src/types/Municipality";
+import type { RealEstateWithScoreDto } from "src/types/dto";
 import type { RealEstateDto } from "src/types/RealEstate";
 import { PopupBuilder } from "./mapPopups";
 
@@ -152,7 +153,7 @@ export function useMapLayers() {
 	 */
 	const drawHeatPoints = (
 		points: [number, number][],
-		findEstatesAtCoordinates?: (lat: number, lon: number) => RealEstateDto[],
+		findEstatesAtCoordinates?: (lat: number, lon: number) => RealEstateWithScoreDto[],
 		onEstateSelect?: (estate: RealEstateDto) => void
 	) => {
 		if (!mapRef.value) {
@@ -218,7 +219,9 @@ export function useMapLayers() {
 			});
 
 			// Find estates at this location if function provided
-			const estates = findEstatesAtCoordinates ? findEstatesAtCoordinates(lat, lon) : [];
+			const estatesWithScore = findEstatesAtCoordinates ? findEstatesAtCoordinates(lat, lon) : [];
+			// Extract the inner RealEstateDto for popup display
+			const estates = estatesWithScore.map((ews) => ews.listing);
 			const popupContent = PopupBuilder.createEstatePopup(estates, lat, lon);
 			const popup = L.popup().setContent(popupContent);
 			marker.bindPopup(popup);

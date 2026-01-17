@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/pois")
+@RequestMapping("/api/poi")
 @Slf4j
 public class PoIController {
     private final PoIService poiService;

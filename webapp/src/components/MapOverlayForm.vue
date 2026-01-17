@@ -67,6 +67,32 @@
 			<!-- Selected Amenity Sliders -->
 			<div v-if="selectedAmenities.length === 0" class="amenities-empty">Click + to add amenity categories (max 3)</div>
 			<div v-for="(amenity, index) in selectedAmenities" :key="amenity.category" class="amenity-slider-row">
+				<div class="reorder-buttons">
+					<q-btn
+						:disable="index === 0"
+						color="grey-7"
+						dense
+						flat
+						icon="keyboard_arrow_up"
+						round
+						size="xs"
+						@click="moveAmenityUp(index)"
+					>
+						<q-tooltip>Move up</q-tooltip>
+					</q-btn>
+					<q-btn
+						:disable="index === selectedAmenities.length - 1"
+						color="grey-7"
+						dense
+						flat
+						icon="keyboard_arrow_down"
+						round
+						size="xs"
+						@click="moveAmenityDown(index)"
+					>
+						<q-tooltip>Move down</q-tooltip>
+					</q-btn>
+				</div>
 				<q-icon :name="getCategoryIcon(amenity.category)" class="amenity-icon" size="20px" />
 				<div class="amenity-slider-container">
 					<span class="amenity-label">{{ getCategoryLabel(amenity.category) }}</span>
@@ -106,7 +132,33 @@
 			</div>
 			<div v-if="addPoiMode" class="poi-hint">Click on the map to add a POI (max 5)</div>
 			<div class="poi-list">
-				<div v-for="poi in poiList" :key="poi.id" class="poi-item">
+				<div v-for="(poi, index) in poiList" :key="poi.id" class="poi-item">
+					<div class="reorder-buttons">
+						<q-btn
+							:disable="index === 0"
+							color="grey-7"
+							dense
+							flat
+							icon="keyboard_arrow_up"
+							round
+							size="xs"
+							@click="movePoiUp(index)"
+						>
+							<q-tooltip>Move up</q-tooltip>
+						</q-btn>
+						<q-btn
+							:disable="index === poiList.length - 1"
+							color="grey-7"
+							dense
+							flat
+							icon="keyboard_arrow_down"
+							round
+							size="xs"
+							@click="movePoiDown(index)"
+						>
+							<q-tooltip>Move down</q-tooltip>
+						</q-btn>
+					</div>
 					<q-icon :style="{ color: poi.color }" name="place" size="20px" />
 					<span class="poi-coords">{{ poi.lat.toFixed(4) }}, {{ poi.lon.toFixed(4) }}</span>
 					<q-btn color="negative" dense flat icon="delete" round size="xs" @click="removePoi(poi.id)" />
@@ -124,8 +176,9 @@
 
 <script lang="ts" setup>
 import { computed, ref } from "vue";
-import searchService from "src/service/searchService";
+import regionService from "src/service/regionService";
 import type { Point } from "src/types/Point";
+import type { ListingSearchFilterDto } from "src/types/dto";
 import { useGeoStore } from "stores/geoStore";
 
 const geoStore = useGeoStore();
@@ -153,7 +206,7 @@ const AMENITY_CATEGORIES = [
 	{ value: "nightclub", label: "Nightclub", icon: "nightlife" },
 	{ value: "pharmacy", label: "Pharmacy", icon: "local_pharmacy" },
 	{ value: "doctors", label: "Doctors", icon: "medical_services" },
-	{ value: "dentist", label: "Dentist", icon: "dentistry" },
+	{ value: "dentist", label: "Dentist", icon: "medical_services" },
 	{ value: "supermarket", label: "Supermarket", icon: "local_grocery_store" },
 	{ value: "bakery", label: "Bakery", icon: "bakery_dining" },
 	{ value: "butcher", label: "Butcher", icon: "lunch_dining" },
@@ -190,6 +243,22 @@ const addAmenityCategory = (category: AmenityCategory) => {
 // Remove an amenity category
 const removeAmenityCategory = (index: number) => {
 	selectedAmenities.value.splice(index, 1);
+};
+
+// Move amenity up in the list
+const moveAmenityUp = (index: number) => {
+	if (index <= 0) return;
+	const temp = selectedAmenities.value[index];
+	selectedAmenities.value[index] = selectedAmenities.value[index - 1];
+	selectedAmenities.value[index - 1] = temp;
+};
+
+// Move amenity down in the list
+const moveAmenityDown = (index: number) => {
+	if (index >= selectedAmenities.value.length - 1) return;
+	const temp = selectedAmenities.value[index];
+	selectedAmenities.value[index] = selectedAmenities.value[index + 1];
+	selectedAmenities.value[index + 1] = temp;
 };
 
 // Get icon for a category
@@ -249,16 +318,109 @@ const removePoi = (id: string) => {
 	}
 };
 
-const handleSearch = () => {
-	const result = searchService.search({
-		priceMin: priceMin.value,
-		priceMax: priceMax.value,
-		squareMetersMin: squareMetersMin.value,
-		squareMetersMax: squareMetersMax.value,
-		transport: transport.value,
-		amenities: selectedAmenities.value,
-	});
-	console.log("Search result:", result);
+// Move POI up in the list
+const movePoiUp = (index: number) => {
+	if (index <= 0) return;
+	const temp = poiList.value[index];
+	poiList.value[index] = poiList.value[index - 1];
+	poiList.value[index - 1] = temp;
+};
+
+// Move POI down in the list
+const movePoiDown = (index: number) => {
+	if (index >= poiList.value.length - 1) return;
+	const temp = poiList.value[index];
+	poiList.value[index] = poiList.value[index + 1];
+	poiList.value[index + 1] = temp;
+};
+
+const handleSearch = async () => {
+	// Build base listing criteria (region will be filled per-region below)
+	const baseListing = {
+		minArea: squareMetersMin.value ?? null,
+		maxPrice: priceMax.value ?? null,
+		minPrice: priceMin.value ?? null,
+		region: null,
+	};
+
+	// Transport criteria
+	const transportCriteria = {
+		maxDistanceToStation: transport.value ?? null,
+	};
+
+	// Amenity priorities (map selectedAmenities to PriorityItemDto)
+	// bonusScoreFactor: top item = list length, bottom item = 1
+	const amenityCount = selectedAmenities.value.length;
+	const amenityPriorities = selectedAmenities.value.slice(0, 3).map((a, index) => ({
+		categoryValue: a.category,
+		maxDistanceToAmenity: a.radius ?? null,
+		bonusScoreFactor: amenityCount - index, // top = max, bottom = 1
+		lat: null,
+		lng: null,
+	}));
+
+	// POI priorities (map poiList to PriorityItemDto with custom_poi category)
+	// bonusScoreFactor: top item = list length, bottom item = 1
+	const poiCount = poiList.value.length;
+	const poiPriorities = poiList.value.map((poi, index) => ({
+		categoryValue: "custom_poi",
+		maxDistanceToAmenity: 500, // default radius for POI
+		bonusScoreFactor: poiCount - index, // top = max, bottom = 1
+		lat: poi.lat,
+		lng: poi.lon,
+	}));
+
+	// Build base filter (listing.region will be set per-region)
+	const baseFilter: ListingSearchFilterDto = {
+		listing: baseListing,
+		transport: transportCriteria,
+		amenityPriorities: amenityPriorities.length > 0 ? amenityPriorities : null,
+		poiPriorities: poiPriorities.length > 0 ? poiPriorities : null,
+	};
+
+	console.log("Starting search across regions with base filter:", baseFilter);
+
+	// Clear existing estates in map before search
+	geoStore.clearAllRegionEstates();
+
+	// Determine regions to search: use only selectedMunicipalities; if none selected, abort
+	const regions: string[] =
+		geoStore.selectedMunicipalities && geoStore.selectedMunicipalities.length > 0
+			? geoStore.selectedMunicipalities
+			: [];
+
+	if (regions.length === 0) {
+		console.log("No selected regions to search; cleared heat points.");
+		return;
+	}
+
+	try {
+		// Fire requests in parallel, one per region
+		const promises = regions.map(async (regionName) => {
+			console.log("Region Name:", regionName);
+			const filterForRegion: ListingSearchFilterDto = {
+				...baseFilter,
+				listing: {
+					...baseFilter.listing!,
+					region: regionName,
+				},
+			};
+			const estates = await regionService.searchEstatesWithFilters(filterForRegion);
+			return { regionName, estates };
+		});
+
+		const resultsPerRegion = await Promise.all(promises);
+
+		console.log("Results per region", resultsPerRegion);
+
+		// Store results in the geoStore using setRegionEstates for reactivity
+		for (const { regionName, estates } of resultsPerRegion) {
+			console.log(`Storing ${estates.length} estates for region:`, regionName);
+			geoStore.setRegionEstates(regionName, estates);
+		}
+	} catch (err) {
+		console.error("Error during region search:", err);
+	}
 };
 
 defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
@@ -461,5 +623,19 @@ defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 	font-style: italic;
 	text-align: center;
 	padding: 8px;
+}
+
+/* Reorder buttons for drag-like reordering */
+.reorder-buttons {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	flex-shrink: 0;
+}
+
+.reorder-buttons .q-btn {
+	padding: 0;
+	min-height: 16px;
+	min-width: 20px;
 }
 </style>
