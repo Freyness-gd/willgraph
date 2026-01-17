@@ -3,6 +3,7 @@ package at.ac.tuwien.mogda.willgraph.service.impl;
 import at.ac.tuwien.mogda.willgraph.controller.dto.AddressDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.ListingCriteria;
 import at.ac.tuwien.mogda.willgraph.controller.dto.ListingSearchFilterDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.ListingWithScore;
 import at.ac.tuwien.mogda.willgraph.controller.dto.PriorityItemDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateWithScoreDto;
@@ -91,13 +92,10 @@ public class RealEstateServiceImpl implements RealEstateService {
         RegionEntity region = this.regionRepository.findByName(listingCriteria.getRegion()).orElseThrow(
             () -> new NotFoundException("Region " + listingCriteria.getRegion() + " not found")
         );
-        Envelope envelope = region.getGeometry().getEnvelopeInternal();
-        double minLon = envelope.getMinX();
-        double maxLon = envelope.getMaxX();
-        double minLat = envelope.getMinY();
-        double maxLat = envelope.getMaxY();
-        List<ListingEntity> results = listingRepository.searchListings(
-            minLon, minLat, maxLon, maxLat,
+        Geometry regionPolygon = region.getGeometry();
+        Envelope envelope = regionPolygon.getEnvelopeInternal();
+        List<ListingWithScore> candidates = listingRepository.searchListings(
+            envelope.getMinX(), envelope.getMinY(), envelope.getMaxX(), envelope.getMaxY(),
             listingCriteria.getMinPrice() != null ? listingCriteria.getMinPrice() : 0.0,
             listingCriteria.getMaxPrice() != null ? listingCriteria.getMaxPrice() : Double.MAX_VALUE,
             listingCriteria.getMinArea() != null ? listingCriteria.getMinArea() : 0.0,
@@ -106,13 +104,25 @@ public class RealEstateServiceImpl implements RealEstateService {
             weightedPois
         );
 
-        List<RealEstateWithScoreDto> realEstateWithScoreDtos = results.stream()
-                .map(listing -> {
-                    // TODO: Calculate score
-                    double score = 1.0;
-                    return new RealEstateWithScoreDto(toDto(listing), score);
-                })
-                .toList();
+        List<RealEstateWithScoreDto> realEstateWithScoreDtos = candidates.stream()
+            .peek(candidate -> {
+                ListingEntity l = candidate.getListing();
+                if (candidate.getAddress() != null) {
+                    log.info("Address={}", candidate.getAddress());
+                    l.setAddress(candidate.getAddress());
+                }
+            })
+            .filter(candidate -> {
+                ListingEntity listing = candidate.getListing();
+                var neoPoint = listing.getAddress().getLocation();
+                var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
+                return regionPolygon.contains(jtsPoint);
+            })
+            .limit(50)
+            .map(result -> {
+                return new RealEstateWithScoreDto(toDto(result.getListing()), result.getScore());
+            })
+            .toList();
 
         double minScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).min().orElse(0.0);
         double maxScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).max().orElse(0.0);
@@ -184,14 +194,15 @@ public class RealEstateServiceImpl implements RealEstateService {
 
     private RealEstateDto toDto(ListingEntity listing) {
         AddressEntity address = listing.getAddress();
+        Double totalArea = listing.getTotalArea() != null ? listing.getTotalArea() : listing.getLivingArea();
         RealEstateDto dto = RealEstateDto.builder()
             .id(listing.getId())
             .price(listing.getPrice())
             .title(listing.getTitle())
-            .pricePerM2(listing.getPricePerM2())
+            .pricePerM2(listing.getPricePerM2() != null ? listing.getPricePerM2() : listing.getPrice() / totalArea)
             .bathroomCount(listing.getBathroomCount())
             .livingArea(listing.getLivingArea())
-            .totalArea(listing.getTotalArea())
+            .totalArea(totalArea)
             .roomCount(listing.getRoomCount())
             .externalUrl(listing.getExternalUrl())
             .timestampFound(listing.getTimestampFound())
