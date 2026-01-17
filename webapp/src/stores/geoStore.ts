@@ -34,12 +34,12 @@ export const useGeoStore = defineStore("geoStore", {
 		showPoiDistances: false,
 		// Estate transport state
 		showEstateTransport: false,
-		estateTransportRadius: 100,
+		estateTransportRadius: 300,
 		estateTransportStations: [] as StationDistanceDto[],
 		estateTransportLoading: false,
 		// Estate amenities state
 		showEstateAmenities: false,
-		estateAmenitiesRadius: 500,
+		estateAmenitiesRadius: 300,
 		estateAmenities: [] as PoiDistanceDto[],
 		estateAmenitiesLoading: false,
 		stationMarkers: [] as StationDistanceDto[],
@@ -65,13 +65,17 @@ export const useGeoStore = defineStore("geoStore", {
 			return this.regionEstatesMap;
 		},
 		// Computed getter for heat points from all regions in the map
-		regionHeatPoints(): [number, number][] {
-			const allPoints: [number, number][] = [];
+		// Returns [lat, lon, intensity] where intensity is score with 20% baseline minimum
+		regionHeatPoints(): [number, number, number][] {
+			const allPoints: [number, number, number][] = [];
 			this.regionEstatesMap.forEach((estates) => {
 				estates.forEach((estateWithScore) => {
 					const estate = estateWithScore.listing;
 					if (estate.address?.location?.latitude != null && estate.address?.location?.longitude != null) {
-						allPoints.push([estate.address.location.latitude, estate.address.location.longitude]);
+						// Score is 0-1, apply 20% baseline: intensity = 0.2 + (score * 0.8)
+						const rawScore = estateWithScore.score ?? 0;
+						const intensity = 0.2 + rawScore * 0.8;
+						allPoints.push([estate.address.location.latitude, estate.address.location.longitude, intensity]);
 					}
 				});
 			});
@@ -359,6 +363,8 @@ export const useGeoStore = defineStore("geoStore", {
 		toggleEstateTransport() {
 			this.showEstateTransport = !this.showEstateTransport;
 			if (this.showEstateTransport) {
+				// Reset radius to default when opening panel
+				this.estateTransportRadius = 300;
 				void this.fetchEstateTransportStations();
 			} else {
 				this.estateTransportStations = [];
@@ -407,6 +413,8 @@ export const useGeoStore = defineStore("geoStore", {
 		toggleEstateAmenities() {
 			this.showEstateAmenities = !this.showEstateAmenities;
 			if (this.showEstateAmenities) {
+				// Reset radius to default when opening panel
+				this.estateAmenitiesRadius = 300;
 				void this.fetchEstateAmenities();
 			} else {
 				this.estateAmenities = [];

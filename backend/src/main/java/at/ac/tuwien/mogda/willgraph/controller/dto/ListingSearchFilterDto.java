@@ -10,4 +10,5 @@ public class ListingSearchFilterDto {
     private TransportCriteria transport;
     private List<PriorityItemDto> amenityPriorities;
     private List<PriorityItemDto> poiPriorities;
+    private Double bonusScoreRegion = 0.0;
 }

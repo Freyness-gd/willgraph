@@ -430,7 +430,7 @@ const searchInput = ref<QInput | null>(null);
 const draggedIndex = ref<number | null>(null);
 
 // Estate transport radius - local state for immediate UI feedback
-const estateTransportRadiusLocal = ref(100);
+const estateTransportRadiusLocal = ref(300);
 
 // Debounced function to update radius and fetch stations
 const debouncedFetchStations = useDebounceFn(() => {
@@ -439,9 +439,10 @@ const debouncedFetchStations = useDebounceFn(() => {
 }, 1000);
 
 // Handler for radius slider change
-const onEstateTransportRadiusChange = (value: number) => {
+const onEstateTransportRadiusChange = (value: number | null) => {
+	if (value === null) return;
 	estateTransportRadiusLocal.value = value;
-	debouncedFetchStations();
+	void debouncedFetchStations();
 };
 
 // Sync local radius with store when transport panel opens
@@ -455,7 +456,7 @@ watch(
 );
 
 // Estate amenities radius - local state for immediate UI feedback
-const estateAmenitiesRadiusLocal = ref(500);
+const estateAmenitiesRadiusLocal = ref(300);
 
 // Debounced function to update radius and fetch amenities
 const debouncedFetchAmenities = useDebounceFn(() => {
@@ -464,9 +465,10 @@ const debouncedFetchAmenities = useDebounceFn(() => {
 }, 1000);
 
 // Handler for amenities radius slider change
-const onEstateAmenitiesRadiusChange = (value: number) => {
+const onEstateAmenitiesRadiusChange = (value: number | null) => {
+	if (value === null) return;
 	estateAmenitiesRadiusLocal.value = value;
-	debouncedFetchAmenities();
+	void debouncedFetchAmenities();
 };
 
 // Sync local radius with store when amenities panel opens
@@ -686,6 +688,7 @@ const onPoiDistanceTool = () => {
 	position: fixed;
 	top: 80px;
 	left: 20px;
+	bottom: 20px;
 	z-index: 1001;
 	padding: 16px;
 	background-color: rgba(255, 255, 255, 0.95);
@@ -694,8 +697,9 @@ const onPoiDistanceTool = () => {
 	min-width: 300px;
 	max-width: 340px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	max-height: calc(100vh - 200px);
 	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 }
 
 .estate-header {
@@ -705,6 +709,7 @@ const onPoiDistanceTool = () => {
 	margin-bottom: 12px;
 	padding-bottom: 8px;
 	border-bottom: 2px solid #1976d2;
+	flex-shrink: 0;
 }
 
 .estate-icon {
@@ -724,6 +729,8 @@ const onPoiDistanceTool = () => {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+	flex: 1;
+	overflow-y: auto;
 }
 
 .estate-row {

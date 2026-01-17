@@ -171,6 +171,16 @@
 		<div class="form-row button-row">
 			<q-btn class="search-btn" color="primary" icon="search" label="Search" @click="handleSearch" />
 		</div>
+
+		<!-- Score Legend - shows when there are results -->
+		<div v-if="hasResults" class="score-legend">
+			<div class="legend-title">Score Legend</div>
+			<div class="legend-gradient"></div>
+			<div class="legend-labels">
+				<span class="legend-label-left">0 - Matching, but unfitting</span>
+				<span class="legend-label-right">1 - Perfect fit</span>
+			</div>
+		</div>
 	</div>
 </template>
 
@@ -182,6 +192,9 @@ import type { ListingSearchFilterDto } from "src/types/dto";
 import { useGeoStore } from "stores/geoStore";
 
 const geoStore = useGeoStore();
+
+// Check if there are search results
+const hasResults = computed(() => geoStore.regionHeatPoints.length > 0);
 
 const priceMin = ref<number | null>(null);
 const priceMax = ref<number | null>(null);
@@ -370,12 +383,13 @@ const handleSearch = async () => {
 		lng: poi.lon,
 	}));
 
-	// Build base filter (listing.region will be set per-region)
+	// Build base filter (listing.region and bonusScoreRegion will be set per-region)
 	const baseFilter: ListingSearchFilterDto = {
 		listing: baseListing,
 		transport: transportCriteria,
 		amenityPriorities: amenityPriorities.length > 0 ? amenityPriorities : null,
 		poiPriorities: poiPriorities.length > 0 ? poiPriorities : null,
+		bonusScoreRegion: null,
 	};
 
 	console.log("Starting search across regions with base filter:", baseFilter);
@@ -394,16 +408,21 @@ const handleSearch = async () => {
 		return;
 	}
 
+	const regionCount = regions.length;
+
 	try {
 		// Fire requests in parallel, one per region
-		const promises = regions.map(async (regionName) => {
-			console.log("Region Name:", regionName);
+		// bonusScoreRegion: top region (index 0) = regionCount, bottom region = 1
+		const promises = regions.map(async (regionName, index) => {
+			const bonusScoreRegion = regionCount - index; // top = max, bottom = 1
+			console.log(`Region: ${regionName}, bonusScoreRegion: ${bonusScoreRegion}`);
 			const filterForRegion: ListingSearchFilterDto = {
 				...baseFilter,
 				listing: {
 					...baseFilter.listing!,
 					region: regionName,
 				},
+				bonusScoreRegion,
 			};
 			const estates = await regionService.searchEstatesWithFilters(filterForRegion);
 			return { regionName, estates };
@@ -637,5 +656,55 @@ defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 	padding: 0;
 	min-height: 16px;
 	min-width: 20px;
+}
+
+/* Score Legend Styles */
+.score-legend {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 12px;
+	background-color: rgba(255, 255, 255, 0.8);
+	border-radius: 6px;
+	margin-top: 4px;
+}
+
+.legend-title {
+	font-weight: 600;
+	font-size: 12px;
+	color: #333;
+	text-align: center;
+}
+
+.legend-gradient {
+	height: 16px;
+	border-radius: 4px;
+	background: linear-gradient(
+		to right,
+		#0000ff 0%,
+		#0066ff 10%,
+		#00ccff 20%,
+		#00ff66 35%,
+		#ffff00 50%,
+		#ffcc00 60%,
+		#ff6600 75%,
+		#ff3300 88%,
+		#ff0000 100%
+	);
+}
+
+.legend-labels {
+	display: flex;
+	justify-content: space-between;
+	font-size: 10px;
+	color: #666;
+}
+
+.legend-label-left {
+	text-align: left;
+}
+
+.legend-label-right {
+	text-align: right;
 }
 </style>
