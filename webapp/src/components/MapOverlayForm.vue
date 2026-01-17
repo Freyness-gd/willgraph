@@ -348,6 +348,9 @@ const movePoiDown = (index: number) => {
 };
 
 const handleSearch = async () => {
+	// Close estate overview when starting a new search
+	geoStore.clearSelectedEstate();
+
 	// Build base listing criteria (region will be filled per-region below)
 	const baseListing = {
 		minArea: squareMetersMin.value ?? null,
@@ -679,7 +682,19 @@ defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 .legend-gradient {
 	height: 16px;
 	border-radius: 4px;
-	background: linear-gradient(to right, blue 0%, yellow 50%, red 100%);
+	background: linear-gradient(
+		to right,
+		#ff0000 0%,
+		#ff3300 10%,
+		#ff6600 20%,
+		#9966ff 30%,
+		#6666ff 40%,
+		#0066ff 50%,
+		#0099cc 60%,
+		#00cc99 70%,
+		#00cc66 80%,
+		#00ff00 100%
+	);
 }
 
 .legend-labels {

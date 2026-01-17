@@ -207,18 +207,20 @@ export function useMapLayers() {
 		}
 
 		// Helper function to convert score (0-1) to color
+		// Red (worst, 0) → Blue (middle, 0.5) → Green (best, 1)
 		const scoreToColor = (score: number): string => {
 			// Clamp score between 0 and 1
 			const s = Math.max(0, Math.min(1, score));
-			if (s < 0.2) return "#0000ff"; // Blue
-			if (s < 0.3) return "#0066ff"; // Light blue
-			if (s < 0.4) return "#00ccff"; // Cyan
-			if (s < 0.5) return "#00ff66"; // Green
-			if (s < 0.6) return "#ffff00"; // Yellow
-			if (s < 0.7) return "#ffcc00"; // Orange-yellow
-			if (s < 0.8) return "#ff6600"; // Orange
-			if (s < 0.9) return "#ff3300"; // Red-orange
-			return "#ff0000"; // Bright red
+			if (s < 0.1) return "#ff0000"; // Bright red (worst)
+			if (s < 0.2) return "#ff3300"; // Red-orange
+			if (s < 0.3) return "#ff6600"; // Orange
+			if (s < 0.4) return "#9966ff"; // Purple (transition to blue)
+			if (s < 0.5) return "#6666ff"; // Blue-purple
+			if (s < 0.6) return "#0066ff"; // Blue (middle)
+			if (s < 0.7) return "#0099cc"; // Blue-cyan
+			if (s < 0.8) return "#00cc99"; // Cyan-green
+			if (s < 0.9) return "#00cc66"; // Green-cyan
+			return "#00ff00"; // Bright green (best)
 		};
 
 		// Ensure markers pane exists with higher z-index than heat pane
