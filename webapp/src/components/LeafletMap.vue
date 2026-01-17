@@ -14,6 +14,15 @@ const geoStore = useGeoStore();
 const mapRef = ref<LeafletMap | null>(null);
 const zoomRef = ref<number>(14);
 
+// Vienna bounds with ~25km buffer in all directions
+// Vienna center: 48.2087334, 16.3736765
+// 1 degree latitude ≈ 111km, 1 degree longitude ≈ 75km at this latitude
+// 25km ≈ 0.225 degrees latitude, 0.33 degrees longitude
+const viennaMaxBounds: [[number, number], [number, number]] = [
+	[47.98, 16.04], // Southwest corner
+	[48.44, 16.71], // Northeast corner
+];
+
 // Initialize composables
 const mapMarkers = useMapMarkers();
 const mapLayers = useMapLayers();
@@ -226,6 +235,21 @@ const clearAllEstateAmenities = () => {
 };
 
 /**
+ * Pan to a specific location with optional zoom level
+ * @param lat Latitude
+ * @param lon Longitude
+ * @param zoom Zoom level (default: 12)
+ */
+const panTo = (lat: number, lon: number, zoom: number = 14) => {
+	if (!mapRef.value) {
+		console.warn("Map not ready for panning");
+		return;
+	}
+	console.log(`Panning to [${lat}, ${lon}] at zoom ${zoom}`);
+	mapRef.value.flyTo([lat, lon], zoom, { animate: true, duration: 0.5 });
+};
+
+/**
  * Handles map click events and emits the coordinates
  */
 const handleMapClick = (event: LeafletMouseEvent) => {
@@ -259,6 +283,7 @@ defineExpose({
 	updateEstateAmenitiesCircleRadius,
 	clearEstateAmenitiesCircle,
 	clearAllEstateAmenities,
+	panTo,
 });
 </script>
 
@@ -266,8 +291,10 @@ defineExpose({
 	<l-map
 		ref="mapRef"
 		:center="[48.2087334, 16.3736765]"
-		:maxZoom="16"
-		:minZoom="14"
+		:max-bounds="viennaMaxBounds"
+		:max-bounds-viscosity="1.0"
+		:maxZoom="18"
+		:minZoom="10"
 		:use-global-leaflet="true"
 		:zoom="zoomRef"
 		style="height: 100vh; width: 100vw"

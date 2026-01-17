@@ -65,6 +65,40 @@ const handlePoiRemoved = (poi: Point) => {
 	}
 };
 
+// Watch for selectedMunicipalities changes to pan to newly added municipality
+watch(
+	() => [...geoStore.selectedMunicipalities],
+	async (newList, oldList) => {
+		const oldSet = new Set(oldList || []);
+		const newlyAdded = newList.find((name) => !oldSet.has(name));
+
+		if (newlyAdded) {
+			await nextTick();
+			if (!leafletMapRef.value) return;
+
+			// Find the municipality to get its boundary for centroid calculation
+			const municipality = geoStore.municipalities.find((m) => m.name === newlyAdded);
+			if (municipality) {
+				const rings = municipality.boundary.coordinates;
+				const outerRing = rings?.[0]?.[0] ?? [];
+				if (outerRing.length > 0) {
+					// Calculate centroid (coordinates are [lng, lat])
+					let sumLat = 0;
+					let sumLng = 0;
+					for (const pos of outerRing) {
+						sumLng += pos[0];
+						sumLat += pos[1];
+					}
+					const centerLat = sumLat / outerRing.length;
+					const centerLng = sumLng / outerRing.length;
+					console.log(`Panning to municipality ${newlyAdded} at [${centerLat}, ${centerLng}]`);
+					leafletMapRef.value.panTo?.(centerLat, centerLng, 13);
+				}
+			}
+		}
+	}
+);
+
 // Watch for regionHeatPoints changes and draw them on the map
 watch(
 	() => geoStore.regionHeatPoints,
@@ -79,10 +113,17 @@ watch(
 		}
 
 		if (newPoints && newPoints.length > 0) {
-			// Zoom out to minZoom and wait for animation to complete before drawing heat points
-			// (heat point sizes are calculated based on current zoom level)
+			// Clear existing points first
 			leafletMapRef.value.clearPoints?.();
-			await leafletMapRef.value.setZoomToMin?.();
+
+			// Pan to Vienna center and zoom to 12, then wait for animation to complete
+			const viennaCenterLat = 48.2087334;
+			const viennaCenterLng = 16.3736765;
+			leafletMapRef.value.panTo?.(viennaCenterLat, viennaCenterLng, 14);
+
+			// Wait for pan/zoom animation to complete (500ms duration + buffer)
+			await new Promise((resolve) => setTimeout(resolve, 600));
+
 			console.log("Drawing heat points on map, count:", newPoints.length);
 			leafletMapRef.value.drawHeatPoints?.(newPoints);
 		} else {
