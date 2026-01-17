@@ -679,18 +679,7 @@ defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 .legend-gradient {
 	height: 16px;
 	border-radius: 4px;
-	background: linear-gradient(
-		to right,
-		#0000ff 0%,
-		#0066ff 10%,
-		#00ccff 20%,
-		#00ff66 35%,
-		#ffff00 50%,
-		#ffcc00 60%,
-		#ff6600 75%,
-		#ff3300 88%,
-		#ff0000 100%
-	);
+	background: linear-gradient(to right, blue 0%, yellow 50%, red 100%);
 }
 
 .legend-labels {
