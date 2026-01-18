@@ -2,9 +2,11 @@ package at.ac.tuwien.mogda.willgraph.service.impl;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.PoIDistanceDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.PointToPointDistanceDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.TransportPathDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.WalkingDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.AmenityTypeEntity;
 import at.ac.tuwien.mogda.willgraph.entity.PointOfInterestEntity;
+import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import at.ac.tuwien.mogda.willgraph.repository.AddressRepository;
 import at.ac.tuwien.mogda.willgraph.repository.AmenityTypeRepository;
 import at.ac.tuwien.mogda.willgraph.repository.PoIRepository;
@@ -105,6 +107,14 @@ public class PoIServiceImpl implements PoIService {
     @Override
     public List<PoIDistanceDto> findPoIsNearby(double lat, double lng, double radius) {
         return this.poiRepository.findPoIsNearby(lat, lng, radius);
+    }
+
+    @Override
+    public TransportPathDto calculateTransportPath(Double fromLat, Double fromLon, Double toLat, Double toLon, double maxWalkDistance) throws NotFoundException {
+        return poiRepository.findShortestTransportPath(fromLat, fromLon, toLat, toLon, maxWalkDistance)
+            .orElseThrow(() -> new NotFoundException(
+                "No transport path found (locations might be too far from a station or not connected)"
+            ));
     }
 
     /**

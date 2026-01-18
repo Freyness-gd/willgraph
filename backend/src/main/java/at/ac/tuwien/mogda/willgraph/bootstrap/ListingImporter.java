@@ -6,6 +6,7 @@ import at.ac.tuwien.mogda.willgraph.entity.RegionEntity;
 import at.ac.tuwien.mogda.willgraph.repository.AddressRepository;
 import at.ac.tuwien.mogda.willgraph.repository.ListingRepository;
 import at.ac.tuwien.mogda.willgraph.repository.RegionRepository;
+import at.ac.tuwien.mogda.willgraph.service.ProximityLinkingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -36,6 +37,7 @@ public class ListingImporter implements CommandLineRunner {
     private final ListingRepository listingRepository;
     private final AddressRepository addressRepository;
     private final RegionRepository regionRepository;
+    private final ProximityLinkingService proximityLinkingService;
 
     private final Map<Long, AddressEntity> addressCache = new HashMap<>(); // Key: OSM_ID
     private List<RegionEntity> cachedRegions;
@@ -54,11 +56,9 @@ public class ListingImporter implements CommandLineRunner {
 
         importCsv("willhaben_output.csv", "willhaben");
         importCsv("immoscout_output.csv", "immoscout");
-
-        log.info("Generating proximity links for all new addresses...");
-        addressRepository.generateAllProximityLinks();
-
         log.info("Listing Import Finished.");
+
+        proximityLinkingService.waitForDataAndLink();
     }
 
     private void importCsv(String filename, String source) {
@@ -66,12 +66,12 @@ public class ListingImporter implements CommandLineRunner {
 
             // AllowDuplicateHeaderNames is required because your Willhaben CSV has 'url' twice
             CSVFormat format = CSVFormat.DEFAULT.builder()
-                    .setHeader()
-                    .setSkipHeaderRecord(true)
-                    .setIgnoreHeaderCase(true)
-                    .setTrim(true)
-                    .setAllowDuplicateHeaderNames(true)
-                    .build();
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setIgnoreHeaderCase(true)
+                .setTrim(true)
+                .setAllowDuplicateHeaderNames(true)
+                .build();
 
             try (CSVParser parser = new CSVParser(reader, format)) {
                 int count = 0;
@@ -88,10 +88,10 @@ public class ListingImporter implements CommandLineRunner {
 
     private void processRow(CSVRecord record, String source) {
         // --- 1. Extract Common Data ---
-        String externalUrl = record.get("url"); // Gets the first occurrence
+        String externalUrl = record.get("url");
         String title = record.get("title");
 
-        // Price & Size (Handle potential empty strings safely)
+        // Price & Size
         Double price = parseDouble(record, "price_eur");
         Double size = parseDouble(record, "size_m2");
         Integer rooms = parseInteger(record, source.equals("immoscout") ? "rooms" : "raw_rooms");
@@ -113,15 +113,15 @@ public class ListingImporter implements CommandLineRunner {
 
         // --- 3. Create Listing ---
         ListingEntity listing = ListingEntity.builder()
-                .externalUrl(externalUrl)
-                .title(title)
-                .price(price)
-                .livingArea(size)
-                .roomCount(rooms) // Simple mapping, you can add regex for "2 Zimmer" vs "2" later
-                .source(source)
-                .timestampFound(parseDate(record, source))
-                .address(address) // Link to the address node
-                .build();
+            .externalUrl(externalUrl)
+            .title(title)
+            .price(price)
+            .livingArea(size)
+            .roomCount(rooms)
+            .source(source)
+            .timestampFound(parseDate(record, source))
+            .address(address)
+            .build();
 
         listingRepository.save(listing);
     }
@@ -134,7 +134,6 @@ public class ListingImporter implements CommandLineRunner {
 
         // B. Check Database (If we restarted the script but cache is empty)
         // If no OSM_ID, we can't reliably dedup against DB easily without spatial query,
-        // so for this script we assume OSM_ID is the key.
         if (osmId != null) {
             Optional<AddressEntity> existing = addressRepository.findByOsmId(osmId);
             if (existing.isPresent()) {
@@ -145,10 +144,10 @@ public class ListingImporter implements CommandLineRunner {
 
         // C. Create New Address
         AddressEntity newAddress = AddressEntity.builder()
-                .fullAddressString(rawAddress)
-                .osmId(osmId)
-                .location(new GeographicPoint2d(lat, lon))
-                .build();
+            .fullAddressString(rawAddress)
+            .osmId(osmId)
+            .location(new GeographicPoint2d(lat, lon))
+            .build();
 
         // D. Link to Region (Spatial Geometry Check)
         // We check which Region polygon contains this Point
@@ -171,9 +170,6 @@ public class ListingImporter implements CommandLineRunner {
         // Create JTS Point
         org.locationtech.jts.geom.Point point = geometryFactory.createPoint(new Coordinate(lon, lat));
 
-        // Iterate cached regions (Fast in memory check)
-        // Since we stored the Geometry in the Entity in the previous script, we can access it here.
-        // NOTE: Ensure RegionEntity.getGeometry() returns the JTS Geometry object.
         for (RegionEntity region : cachedRegions) {
             if (region.getGeometry() != null && region.getGeometry().contains(point)) {
                 return region;
@@ -183,7 +179,6 @@ public class ListingImporter implements CommandLineRunner {
     }
 
     // --- Helper Parsers ---
-
     private Double parseDouble(CSVRecord record, String col) {
         try {
             String val = record.get(col);
@@ -224,7 +219,7 @@ public class ListingImporter implements CommandLineRunner {
                 return LocalDateTime.now();
             }
         }
-        return LocalDateTime.now(); // Willhaben output didn't have a timestamp column in the snippet
+        return LocalDateTime.now(); //TODO: if willhaben has timestamp
     }
 
 }
