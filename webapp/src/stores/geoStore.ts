@@ -214,6 +214,7 @@ export const useGeoStore = defineStore("geoStore", {
 			const filter: ListingSearchFilterDto = {
 				listing: {
 					minArea: null,
+          maxArea: null,
 					maxPrice: null,
 					minPrice: null,
 					region: regionName,
