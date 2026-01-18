@@ -232,6 +232,10 @@ def fetch_from_onedrive():
             os.remove(temp_fallback_zip)
         return False
 
+def local_raw_data_exists():
+    """Checks if raw GTFS data (stops.txt) exists in any subdirectory."""
+    return any(glob.glob(os.path.join(BASE_DIR, '**', 'stops.txt'), recursive=True))
+
 def parse_gtfs_time(time_str):
     if pd.isna(time_str):
         return None
