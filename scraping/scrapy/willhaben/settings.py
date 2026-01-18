@@ -19,7 +19,7 @@ ADDONS = {}
 
 LOG_LEVEL = "INFO"
 
-NEO4J_URI = "neo4j://localhost:7687"
+NEO4J_URI = "neo4j:///neo4j:7687"
 NEO4J_USER = "neo4j"
 NEO4J_PASSWORD = "testpassword"
 NEO4J_DATABASE = "neo4j"

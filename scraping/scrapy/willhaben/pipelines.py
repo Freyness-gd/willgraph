@@ -300,33 +300,36 @@ class Neo4jPipeline:
 
     CYPHER_UPSERT = """
         UNWIND $rows AS row
+        WITH row WHERE row.url IS NOT NULL
 
-        MERGE (re:`Real Estate` {url: row.url})
+        // Upsert Listing node (matches Spring ListingImporter / ListingEntity)
+        MERGE (l:Listing {url: row.url})
         SET
-            re.livingArea = coalesce(row.size_m2, re.livingArea),
-            re.area       = coalesce(row.size_m2, re.area),
-            re.found      = coalesce(row.scraped_at, re.found),
-            re.source     = coalesce(row.source, re.source)
+            l.title          = coalesce(row.title, l.title),
+            l.price          = coalesce(row.price_eur, l.price),
+            l.livingArea     = coalesce(row.size_m2, l.livingArea),
+            l.roomCount      = coalesce(row.rooms, l.roomCount),
+            l.source         = coalesce(row.source, l.source),
+            l.timestampFound = coalesce(row.scraped_at, l.timestampFound)
 
-        MERGE (rent:Rental {url: row.url})
-        SET
-            rent.priceInEur = coalesce(row.price_eur, rent.priceInEur),
-            rent.priceAt    = coalesce(row.scraped_at, rent.priceAt)
+        // Resolve / create Address node
+        WITH l, row
+        CALL {
+        WITH row
+            MERGE (a:Address {osmId: row.osm_id})
+            SET a.fullAddressString = coalesce(row.location, a.fullAddressString),
+                a.location = coalesce(
+                    CASE
+                    WHEN row.lat IS NOT NULL AND row.lon IS NOT NULL
+                        THEN point({latitude: row.lat, longitude: row.lon})
+                    END,
+                    a.location)
+            RETURN a
+        }
 
-        MERGE (rm:Rooms {url: row.url})
-        SET
-            rm.count = coalesce(row.rooms, rm.count)
-
-        MERGE (addr:Address {streetId: row.osm_id})
-        SET
-            addr.Street    = coalesce(row.location, addr.Street),
-            addr.latitude  = coalesce(row.lat, addr.latitude),
-            addr.longitude = coalesce(row.lon, addr.longitude)
-
-        MERGE (re)-[:HAS_ROOMS]->(rm)
-        MERGE (re)-[:HAS_TYPE]->(rent)
-        MERGE (re)-[:IS_IN]->(addr)
-        MERGE (addr)-[:HAS_REAL_ESTATE]->(re)
+        // Connect Listing -> Address if an address exists
+        WITH l, a, row WHERE a IS NOT NULL
+        MERGE (l)-[:LOCATED_AT]->(a)
         """
 
     def __init__(self, uri: str, user: str, password: str, database: Optional[str] = None, batch_size: int = 200):
@@ -382,6 +385,7 @@ class Neo4jPipeline:
 
         self.batch.append({
             "url": url,
+            "title": _val("title"),
             "size_m2": _val("size_m2"),
             "price_eur": _val("price_eur"),
             "rooms": _val("rooms"),
