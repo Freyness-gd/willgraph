@@ -2,12 +2,13 @@ package at.ac.tuwien.mogda.willgraph.repository;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.AddressEntity;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AddressRepository extends Neo4jRepository<AddressEntity, String> {
@@ -28,6 +29,14 @@ public interface AddressRepository extends Neo4jRepository<AddressEntity, String
             "SET r.distanceInMeters = point.distance(a.location, t.location), " +
             "    r.walkingDurationInMinutes = point.distance(a.location, t.location) / 80.0")
     void generateAllProximityLinks();
+
+    @Query("MATCH (t:Transport) WHERE id(t) in $transportIds " +
+            "MATCH (a:Address " +
+            "WHERE point.distance(a.location, t.location) < 800 " +
+            "MERGE (a)-[r:CLOSE_TO_STATION]->(t) " +
+            "SET r.distanceInMeters = point.distance(a.location, t.location), " +
+            "    r.walkingDurationInMinutes = point.distance(a.location, t.location) / 80.0")
+    void generateProximityLinksBatched(@Param("transportIds") List<Long> transportIds);
 
     @Query("MATCH (a:Address {id: $addressId})-[r:CLOSE_TO_STATION]->(t:Transport) " +
             "RETURN t.name AS name, " +

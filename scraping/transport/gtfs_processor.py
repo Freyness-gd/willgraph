@@ -30,6 +30,7 @@ STATE_FILE = os.path.join(BASE_DIR, 'download_state.json')
 DBP_USERNAME = os.getenv("DBP_USERNAME", "")
 DBP_PASSWORD = os.getenv("DBP_PASSWORD", "")
 
+ONEDRIVE_FALLBACK_LINK = os.getenv("ONEDRIVE_LINK", "https://tuwienacat-my.sharepoint.com/:u:/g/personal/e12122386_student_tuwien_ac_at/IQD89Okos9TBRqNTGmMl0f04Ae3K7oxHHBK59MOKDI0dj58?e=63fLlP&download=1")
 TOKEN_URL = "https://user.mobilitaetsverbuende.at/auth/realms/dbp-public/protocol/openid-connect/token"
 API_BASE_URL = "https://data.mobilitaetsverbuende.at/api/public/v1/data-sets"
 CLIENT_ID = "dbp-public-ui"
@@ -178,8 +179,8 @@ class DBPClient:
 
 def fetch_data_from_api():
     if not DBP_USERNAME or "EXAMPLE.COM" in DBP_USERNAME:
-        logger.warning("Skipping API download (Credentials not set). Using local files.")
-        return
+        logger.warning("Skipping API download (Credentials not set).")
+        raise ValueError("Credentials not set or default.")
 
     client = DBPClient(DBP_USERNAME, DBP_PASSWORD)
     client.authenticate()
@@ -190,6 +191,46 @@ def fetch_data_from_api():
     updates_found = client.sync_regional_gtfs(BASE_DIR)
     return updates_found
 
+def fetch_from_onedrive():
+    """Fallback: Downloads a complete ZIP of the directory structure from OneDrive."""
+    logger.info("--- INITIATING FALLBACK DOWNLOAD FROM ONEDRIVE ---")
+
+    if not ONEDRIVE_FALLBACK_LINK or "YOUR_ID" in ONEDRIVE_FALLBACK_LINK:
+        logger.error("OneDrive link is not configured properly.")
+        return False
+
+    temp_fallback_zip = os.path.join(BASE_DIR, "fallback_dump.zip")
+    os.makedirs(BASE_DIR, exist_ok=True)
+
+    try:
+        logger.info(f"Downloading from OneDrive: {ONEDRIVE_FALLBACK_LINK}...")
+        with requests.get(ONEDRIVE_FALLBACK_LINK, stream=True, verify=False) as r:
+            r.raise_for_status()
+            total_size = int(r.headers.get('content-length', 0))
+            downloaded = 0
+
+            with open(temp_fallback_zip, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=32*1024):
+                    if chunk:
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size > 0 and downloaded % (1024*1024*10) == 0:
+                            print(f"\rDownloaded {downloaded//(1024*1024)} MB...", end="")
+        print("") # Newline
+        logger.info("Download complete. Extracting...")
+
+        with zipfile.ZipFile(temp_fallback_zip, 'r') as z:
+            z.extractall(BASE_DIR)
+
+        logger.info("Extraction complete.")
+        os.remove(temp_fallback_zip)
+        return True
+
+    except Exception as e:
+        logger.error(f"OneDrive fallback failed: {e}")
+        if os.path.exists(temp_fallback_zip):
+            os.remove(temp_fallback_zip)
+        return False
 
 def parse_gtfs_time(time_str):
     if pd.isna(time_str):
@@ -201,9 +242,32 @@ def parse_gtfs_time(time_str):
         return None
 
 def process_gtfs():
-    updates_found = fetch_data_from_api()
+    updates_found = 0
+    used_fallback = False
+    try:
+        updates_found = fetch_data_from_api()
+    except Exception as e:
+        logger.warning(f"API Sync failed or skipped: {e}")
+        if os.path.exists(OUTPUT_NODES) and os.path.exists(OUTPUT_EDGES):
+            logger.info("API failed, but files exists locally.")
+            logger.info("Skipping OneDrive download. Using existing processed data.")
+            sys.exit(0)
+        elif local_raw_data_exists():
+            logger.info("API failed, but raw GTFS data found in folders.")
+            logger.info("Skipping OneDrive download. Will regenerate CSVs from local files.")
+            updates_found = 1
+        else:
+            logger.info("Local data missing. Attempting switch to OneDrive fallback...")
+            success = fetch_from_onedrive()
+            if success:
+                updates_found = 1
+                used_fallback = True
+            else:
+                logger.error("Both API and Fallback failed.")
+                sys.exit(1)
+
     files_exist = os.path.exists(OUTPUT_NODES) and os.path.exists(OUTPUT_EDGES)
-    if updates_found == 0 and files_exist:
+    if updates_found == 0 and files_exist and not used_fallback:
         logger.info("No new datasets found and output files exist. Skipping processing.")
         sys.exit(0)
     if updates_found == 0 and not files_exist:

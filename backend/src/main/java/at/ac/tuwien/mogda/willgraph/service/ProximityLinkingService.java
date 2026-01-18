@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class ProximityLinkingService {
     private final AddressRepository addressRepository;
     private final TransportRepository transportRepository;
     private final Neo4jClient neo4jClient;
+    private final TransactionTemplate transactionTemplate;
 
     @Async
     public void waitForDataAndLink() {
@@ -26,6 +28,7 @@ public class ProximityLinkingService {
             waitForTransportImportCompletion();
 
             log.info("Transport data detected. Generating proximity links...");
+            transactionTemplate.executeWithoutResult(status -> transportRepository.createSpatialIndex());
             transportRepository.createSpatialIndex();
             addressRepository.generateAllProximityLinks();
             generateWalkEdgesSafely();
@@ -34,6 +37,17 @@ public class ProximityLinkingService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("Linking process interrupted", e);
+        }
+    }
+
+    public void generateProximityLinksSafely() {
+        List<Long> allTransportIds = transportRepository.getAllTransportIds();
+        int batchSize = 500;
+        for (int i = 0; i < allTransportIds.size(); i += batchSize) {
+            int end = Math.min(allTransportIds.size(), i + batchSize);
+            List<Long> batch = allTransportIds.subList(i, end);
+            transactionTemplate.executeWithoutResult(status -> addressRepository.generateProximityLinksBatched(batch));
+            log.info("Processed walk links for stations {} to {}", i, end);
         }
     }
 
