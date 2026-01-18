@@ -355,12 +355,12 @@ class Neo4jPipeline:
         user = settings.get("NEO4J_USER")
         password = settings.get("NEO4J_PASSWORD")
         database = settings.get("NEO4J_DATABASE")
-        batch_size = settings.getint("NEO4J_BATCH_SIZE", 200)
+        batch_size = settings.getint("NEO4J_BATCH_SIZE", 10)
         return cls(uri, user, password, database, batch_size)
 
     def open_spider(self, spider):
         self.driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
-        self.session = self.driver.session(database=self.database)
+        self.session = self.driver.session()
 
     def close_spider(self, spider)  :
         self._flush_batch()
@@ -391,8 +391,8 @@ class Neo4jPipeline:
             "rooms": _val("rooms"),
             "location": _val("location"),
             "osm_id": _val("osm_id"),
-            "lat": _val("lat"),
-            "lon": _val("lon"),
+            "lat": float(adapter.get("lat")) if adapter.get("lat") is not None else None,
+            "lon": float(adapter.get("lon")) if adapter.get("lon") is not None else None,
             "scraped_at": _val("scraped_at"),
             "source": spider.name,
         })
