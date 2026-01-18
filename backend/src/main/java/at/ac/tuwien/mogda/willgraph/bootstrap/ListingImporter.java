@@ -66,12 +66,12 @@ public class ListingImporter implements CommandLineRunner {
 
             // AllowDuplicateHeaderNames is required because your Willhaben CSV has 'url' twice
             CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setHeader()
-                .setSkipHeaderRecord(true)
-                .setIgnoreHeaderCase(true)
-                .setTrim(true)
-                .setAllowDuplicateHeaderNames(true)
-                .build();
+                    .setHeader()
+                    .setSkipHeaderRecord(true)
+                    .setIgnoreHeaderCase(true)
+                    .setTrim(true)
+                    .setAllowDuplicateHeaderNames(true)
+                    .build();
 
             try (CSVParser parser = new CSVParser(reader, format)) {
                 int count = 0;
@@ -113,15 +113,15 @@ public class ListingImporter implements CommandLineRunner {
 
         // --- 3. Create Listing ---
         ListingEntity listing = ListingEntity.builder()
-            .externalUrl(externalUrl)
-            .title(title)
-            .price(price)
-            .livingArea(size)
-            .roomCount(rooms)
-            .source(source)
-            .timestampFound(parseDate(record, source))
-            .address(address)
-            .build();
+                .externalUrl(externalUrl)
+                .title(title)
+                .price(price)
+                .livingArea(size)
+                .roomCount(rooms)
+                .source(source)
+                .timestampFound(parseDate(record, source).toString())
+                .address(address)
+                .build();
 
         listingRepository.save(listing);
     }
@@ -144,10 +144,10 @@ public class ListingImporter implements CommandLineRunner {
 
         // C. Create New Address
         AddressEntity newAddress = AddressEntity.builder()
-            .fullAddressString(rawAddress)
-            .osmId(osmId)
-            .location(new GeographicPoint2d(lat, lon))
-            .build();
+                .fullAddressString(rawAddress)
+                .osmId(osmId)
+                .location(new GeographicPoint2d(lat, lon))
+                .build();
 
         // D. Link to Region (Spatial Geometry Check)
         // We check which Region polygon contains this Point

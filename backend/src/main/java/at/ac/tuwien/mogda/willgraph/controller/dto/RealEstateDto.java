@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,7 +25,7 @@ public class RealEstateDto {
     private Integer bathroomCount;
 
     private String source;
-    private LocalDateTime timestampFound;
+    private String timestampFound;
     private AddressDto address;
 
 }

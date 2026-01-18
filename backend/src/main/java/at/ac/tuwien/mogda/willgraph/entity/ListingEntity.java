@@ -4,8 +4,6 @@ import lombok.*;
 import org.springframework.data.neo4j.core.schema.*;
 import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
 
-import java.time.LocalDateTime;
-
 import static org.springframework.data.neo4j.core.schema.Relationship.Direction.OUTGOING;
 
 @Node("Listing")
@@ -34,7 +32,7 @@ public class ListingEntity {
     private Integer bathroomCount;
 
     private String source;
-    private LocalDateTime timestampFound;
+    private String timestampFound;
     //Removed timestamp is not really extractable
 
     @Relationship(type = "LOCATED_AT", direction = OUTGOING)
