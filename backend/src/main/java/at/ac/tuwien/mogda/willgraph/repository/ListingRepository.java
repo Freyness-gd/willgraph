@@ -37,10 +37,17 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
         
                     // 1. Safe Start Node Retrieval
                     CALL (a) {
-                         WITH a
+                         //FAST PATH: Explicit Edge
+                         MATCH (a)-[:CLOSE_TO_STATION]->(s:Transport)
+                         RETURN s AS startNode
+                         LIMIT 1
+                         UNION
+                         //SLOW PATH: Spatial Search (Fallback)
+                         MATCH (a)
+                         WHERE NOT (a)-[:CLOSE_TO_STATION]->()
                          MATCH (s:Transport)
                          WHERE point.distance(a.location, s.location) <= $maxDistTransport
-                         RETURN s as startNode
+                         RETURN s AS startNode
                          ORDER BY point.distance(a.location, s.location) ASC
                          LIMIT 1
                          UNION
@@ -60,11 +67,10 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
                          OPTIONAL MATCH (poi:PointOfInterest)-[:IS_TYPE]->(t:Amenity)
                          WHERE t.name = item.name AND point.distance(a.location, poi.location) < 1000
                          WITH item, min(point.distance(a.location, poi.location)) AS minDist
-                         RETURN sum(item.weight * (1000.0 - coalesce(minDist, 1000.0)) / 100.0) AS amenityScore
+                         RETURN sum(item.weight * (1000.0 - coalesce(minDist, 1000.0)) / 10.0) AS amenityScore
                      }
         
                     // 3. POI SCORE (Scoped Call)
-                    // We explicitly pass 'l', 'a', 'startNode'
                    CALL (l, a, startNode) {
                         WITH l, a, startNode, coalesce($customPois, []) as safePois
                         WITH l, a, startNode, safePois WHERE size(safePois) = 0
@@ -79,7 +85,6 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
                         WITH startNode, item, distGeo,
                              CASE WHEN distGeo < 1500 THEN (1500.0 - distGeo) / 15.0 ELSE 0.0 END AS walkScore
         
-                        // NESTED CALL FIX: Move logic inside CASE or keep stream alive
                         CALL (startNode, item, distGeo) {
                             WITH startNode, item, distGeo
                             // Only run pathfinding if conditions met
@@ -120,34 +125,4 @@ public interface ListingRepository extends Neo4jRepository<ListingEntity, String
 
     @Query("MATCH (l:Listing {id: $listingId})-[:LOCATED_AT]->(a:Address) RETURN a.id")
     Optional<String> findAddressIdByListingId(@Param("listingId") String listingId);
-
-
-    //MATCH (l:Listing {id: $listingId})-[:LOCATED_AT]->(a:Address)
-    //
-    //// 1. Calculate Amenities (Direct Walk)
-    //OPTIONAL MATCH (a)-[r_poi:CLOSE_TO_POI]->(poi:PointOfInterest)-[:IS_TYPE]->(type:Amenity)
-    //WHERE type.name = 'Supermarket'
-    //WITH l, a, min(r_poi.distanceInMeters) AS distToSupermarket
-    //
-    //// 2. Calculate Public Transport Path (Walk + Ride)
-    //// Find the closest station to the house
-    //MATCH (a)-[r_walk:CLOSE_TO_STATION]->(startNode:Transport)
-    //// Find the target station (e.g., City Center)
-    //MATCH (targetNode:Transport {name: 'Stephansplatz'})
-    //
-    //// Find the shortest path through the transport network
-    //MATCH path = shortestPath((startNode)-[:CONNECTED_TO*..10]->(targetNode))
-    //
-    //// Sum up the hops (assuming 2 mins per station hop for simplicity if no time data exists)
-    //WITH l, distToSupermarket, r_walk.walkingDurationInMinutes AS walkToStation, path, length(path) * 2.0 AS rideTime
-    //
-    //// 3. Return the Combined Result
-    //RETURN
-    //    l.title,
-    //    distToSupermarket AS metersToSupermarket,
-    //    (walkToStation + rideTime) AS totalCommuteToCenterMin,
-    //    [n in nodes(path) | n.name] AS stationsOnPath
-    //ORDER BY totalCommuteToCenterMin ASC
-    //LIMIT 1
-
 }

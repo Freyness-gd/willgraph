@@ -1,8 +1,8 @@
 import csv
-import os
-import logging
 import hashlib
 import json
+import logging
+import os
 import sys
 from neo4j import GraphDatabase
 
@@ -25,6 +25,7 @@ AUTH = (NEO4J_USER, NEO4J_PASSWORD)
 
 BATCH_SIZE = 1000
 
+
 def calculate_file_hash(filepaths):
     """Generates an MD5 hash for a list of files to detect changes."""
     hasher = hashlib.md5()
@@ -35,6 +36,7 @@ def calculate_file_hash(filepaths):
             while chunk := f.read(8192):
                 hasher.update(chunk)
     return hasher.hexdigest()
+
 
 def is_local_data_changed(current_hash):
     """Checks if the data has changed since the last run."""
@@ -51,6 +53,8 @@ def is_local_data_changed(current_hash):
         return True
 
     return True
+
+
 def is_db_populated(driver):
     """Checks if the Neo4j database actually has data."""
     try:
@@ -62,11 +66,13 @@ def is_db_populated(driver):
         logger.warning(f"Could not check DB state (assuming empty): {e}")
         return False
 
+
 def update_state(current_hash):
     """Updates the state file after a successful import."""
     with open(STATE_FILE, 'w') as f:
         json.dump({'data_hash': current_hash}, f)
     logger.info("State saved.")
+
 
 def import_data():
     if not os.path.exists(OUTPUT_NODES) or not os.path.exists(OUTPUT_EDGES):
@@ -118,6 +124,8 @@ def import_data():
                         insert_edges(session, batch)
                         batch = []
                 if batch: insert_edges(session, batch)
+            session.run(
+                "CREATE (:SystemState {type: 'transport_import', status: 'COMPLETED', timestamp: timestamp()});")  # Notify that data import is ready
         update_state(current_hash)
         logger.info("Done.")
     except Exception as e:
@@ -125,9 +133,12 @@ def import_data():
         sys.exit(1)
     finally:
         driver.close()
+
+
 def create_constraints(session):
     session.run("CREATE CONSTRAINT transport_id_unique IF NOT EXISTS FOR (t:Transport) REQUIRE t.id IS UNIQUE")
     session.run("CREATE INDEX transport_location_index IF NOT EXISTS FOR (t:Transport) ON (t.location)")
+
 
 def insert_edges(session, batch):
     query = """
@@ -140,6 +151,7 @@ def insert_edges(session, batch):
             r.last_updated = datetime()
         """
     session.run(query, batch=batch)
+
 
 def insert_nodes(session, batch):
     query = """
@@ -159,6 +171,7 @@ def insert_nodes(session, batch):
         t.updated_at = datetime()
     """
     session.run(query, batch=batch)
+
 
 if __name__ == "__main__":
     import_data()

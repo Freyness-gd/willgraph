@@ -119,11 +119,9 @@ public class RealEstateServiceImpl implements RealEstateService {
                 return regionPolygon.contains(jtsPoint);
             })
             .limit(50)
-            .map(result -> {
-                return new RealEstateWithScoreDto(toDto(result.getListing()), result.getScore());
-            })
+            .map(result -> new RealEstateWithScoreDto(toDto(result.getListing()), result.getScore()))
             .toList();
-
+        log.info("Score={}", realEstateWithScoreDtos.getFirst().getScore());
         double minScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).min().orElse(0.0);
         double maxScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).max().orElse(0.0);
 
@@ -162,7 +160,7 @@ public class RealEstateServiceImpl implements RealEstateService {
             if (item.getCategoryValue() != null) {
                 weightedAmenities.add(Map.of(
                     "name", item.getCategoryValue(),
-                    "weight", calculateWeight(i)
+                    "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0 //TODO: Could also use calculateWeight here
                 ));
             }
         }
@@ -180,7 +178,7 @@ public class RealEstateServiceImpl implements RealEstateService {
                 weightedPois.add(Map.of(
                     "lat", item.getLat(),
                     "lng", item.getLng(),
-                    "weight", calculateWeight(i)
+                    "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0
                 ));
             }
         }
