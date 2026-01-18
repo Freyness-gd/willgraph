@@ -1,16 +1,18 @@
 import axios from "axios";
 import type { StationDistance, StationDistanceDto } from "src/types/Station";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
 const transportService = {
 	/**
 	 * Fetches nearby transport stations from backend API.
-	 * Makes GET request to http://localhost:8080/api/transport/nearby?lat={lat}&lng={lng}&radius={radius}
+	 * Makes GET request to /api/transport/nearby?lat={lat}&lng={lng}&radius={radius}
 	 */
 	async findNearbyStations(lat: number, lng: number, radius: number = 1000): Promise<StationDistance[]> {
 		console.log("findNearbyStations called for lat:", lat, "lng:", lng, "radius:", radius);
 
 		try {
-			const response = await axios.get<StationDistance[]>("http://localhost:8080/api/transport/nearby", {
+			const response = await axios.get<StationDistance[]>(`${API_BASE_URL}/api/transport/nearby`, {
 				params: {
 					lat,
 					lng,
@@ -34,7 +36,7 @@ const transportService = {
 		console.log("findNearbyStationsDetailed called for lat:", lat, "lng:", lng, "radius:", radius);
 
 		try {
-			const response = await axios.get<StationDistanceDto[]>("http://localhost:8080/api/transport/nearby", {
+			const response = await axios.get<StationDistanceDto[]>(`${API_BASE_URL}/api/transport/nearby`, {
 				params: {
 					lat,
 					lng,

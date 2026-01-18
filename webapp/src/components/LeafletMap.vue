@@ -7,7 +7,7 @@ import type { Point } from "src/types/Point";
 import type { StationDistanceDto } from "src/types/Station";
 import type { RealEstateDto } from "src/types/RealEstate";
 import { useGeoStore } from "stores/geoStore";
-import { municipalitiesToGeoJson } from "src/mapper/MunicipalityMapper";
+import { regionsToGeoJson } from "src/mapper/MunicipalityMapper";
 import { useMapLayers, useMapMarkers } from "src/composables/map";
 
 const geoStore = useGeoStore();
@@ -32,7 +32,7 @@ const emit = defineEmits<{
 	(e: "estate-select", estate: RealEstateDto): void;
 }>();
 
-const geoJson = computed(() => municipalitiesToGeoJson(geoStore.getSelectedMunicipalities));
+const geoJson = computed(() => regionsToGeoJson(geoStore.getSelectedRegions));
 
 const onMapReady = (map: LeafletMap) => {
 	console.log("L keys:", Object.keys(L));
@@ -63,9 +63,9 @@ const drawMunicipalities = (munis: Municipality[]) => {
 
 /**
  * Draw heat points on the map
- * @param points Array of [latitude, longitude] pairs
+ * @param points Array of [latitude, longitude, intensity] tuples
  */
-const drawHeatPoints = (points: [number, number][]) => {
+const drawHeatPoints = (points: [number, number, number][]) => {
 	mapLayers.drawHeatPoints(
 		points,
 		(lat, lon) => geoStore.findEstatesAtCoordinates(lat, lon),
@@ -193,7 +193,7 @@ const clearEstateTransport = () => {
  * Shows estate amenity markers
  */
 const showEstateAmenities = (
-	amenities: Array<{ name: string; category: string; location?: { latitude: number; longitude: number } }>
+	amenities: Array<{ name: string; amenityType: string; location?: { latitude: number; longitude: number } }>
 ) => {
 	mapLayers.showEstateAmenities(amenities);
 };
