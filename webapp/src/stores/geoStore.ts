@@ -1,15 +1,15 @@
-import { acceptHMRUpdate, defineStore } from "pinia";
-import type { Municipality } from "src/types/Municipality";
-import type { MunicipalityFeatureCollection } from "src/types/MunicipalityGeoJson";
-import type { StationDistanceDto } from "src/types/Station";
-import type { PoiDistanceDto } from "src/types/Poi";
-import type { RealEstateDto } from "src/types/RealEstate";
-import type { Point, PoiWithDistance } from "src/types/Point";
-import { mapMunicipalities } from "src/mapper/MunicipalityMapper";
+import {acceptHMRUpdate, defineStore} from "pinia";
+import type {Municipality} from "src/types/Municipality";
+import type {MunicipalityFeatureCollection} from "src/types/MunicipalityGeoJson";
+import type {StationDistanceDto} from "src/types/Station";
+import type {PoiDistanceDto} from "src/types/Poi";
+import type {RealEstateDto} from "src/types/RealEstate";
+import type {Point, PoiWithDistance} from "src/types/Point";
+import {mapMunicipalities} from "src/mapper/MunicipalityMapper";
 import regionService from "src/service/regionService";
 import transportService from "src/service/transportService";
 import poiService from "src/service/poiService";
-import type { ListingSearchFilterDto, RealEstateWithScoreDto, RegionDto } from "src/types/dto";
+import type {ListingSearchFilterDto, RealEstateWithScoreDto, RegionDto} from "src/types/dto";
 
 const MAX_MUNICIPALITIES = 5;
 
@@ -169,6 +169,7 @@ export const useGeoStore = defineStore("geoStore", {
 				const filter: ListingSearchFilterDto = {
 					listing: {
 						minArea: null,
+            maxArea: null,
 						maxPrice: null,
 						minPrice: null,
 						region: regionName,

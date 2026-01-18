@@ -1,13 +1,6 @@
 package at.ac.tuwien.mogda.willgraph.service.impl;
 
-import at.ac.tuwien.mogda.willgraph.controller.dto.AddressDto;
-import at.ac.tuwien.mogda.willgraph.controller.dto.ListingCriteria;
-import at.ac.tuwien.mogda.willgraph.controller.dto.ListingSearchFilterDto;
-import at.ac.tuwien.mogda.willgraph.controller.dto.ListingWithScore;
-import at.ac.tuwien.mogda.willgraph.controller.dto.PriorityItemDto;
-import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
-import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateWithScoreDto;
-import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.*;
 import at.ac.tuwien.mogda.willgraph.entity.AddressEntity;
 import at.ac.tuwien.mogda.willgraph.entity.ListingEntity;
 import at.ac.tuwien.mogda.willgraph.entity.RegionEntity;
@@ -42,44 +35,44 @@ public class RealEstateServiceImpl implements RealEstateService {
 
     public List<RealEstateDto> findRealEstatesInRegion(String regionName, String iso) throws NotFoundException {
         RegionEntity region = this.regionRepository.findByName(regionName).orElseThrow(
-            () -> new NotFoundException("Region " + regionName + " not found")
+                () -> new NotFoundException("Region " + regionName + " not found")
         );
 
         Geometry regionPolygon = region.getGeometry();
         var envelope = regionPolygon.getEnvelopeInternal();
 
         log.info("Searching Box: " +
-            envelope.getMinX() + " to " + envelope.getMaxX() + " (Lon/X), " +
-            envelope.getMinY() + " to " + envelope.getMaxY() + " (Lat/Y)"
+                envelope.getMinX() + " to " + envelope.getMaxX() + " (Lon/X), " +
+                envelope.getMinY() + " to " + envelope.getMaxY() + " (Lat/Y)"
         );
         List<ListingEntity> candidates = listingRepository.findInsideBoundingBox(
-            envelope.getMinX(),
-            envelope.getMinY(),
-            envelope.getMaxX(),
-            envelope.getMaxY()
+                envelope.getMinX(),
+                envelope.getMinY(),
+                envelope.getMaxX(),
+                envelope.getMaxY()
         );
         return candidates.stream()
-            .filter(listing -> {
-                var neoPoint = listing.getAddress().getLocation();
-                var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
-                return regionPolygon.contains(jtsPoint);
-            })
-            .map(this::toDto)
-            .toList();
+                .filter(listing -> {
+                    var neoPoint = listing.getAddress().getLocation();
+                    var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
+                    return regionPolygon.contains(jtsPoint);
+                })
+                .map(this::toDto)
+                .toList();
     }
 
     @Override
     public List<RealEstateDto> findAll() {
         return this.listingRepository.findAll(PageRequest.of(0, 10)).getContent()
-            .stream()
-            .map(this::toDto)
-            .toList();
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @Override
     public List<StationDistanceDto> findStationsNearby(String id) throws NotFoundException {
         String addressId = this.listingRepository.findAddressIdByListingId(id).orElseThrow(
-            () -> new NotFoundException("Listing with id: " + id + " not found!")
+                () -> new NotFoundException("Listing with id: " + id + " not found!")
         );
         return this.addressRepository.findStationsNearAddress(addressId);
     }
@@ -90,37 +83,38 @@ public class RealEstateServiceImpl implements RealEstateService {
         List<Map<String, Object>> weightedPois = getWeightedPois(filter.getPoiPriorities());
         ListingCriteria listingCriteria = filter.getListing();
         RegionEntity region = this.regionRepository.findByName(listingCriteria.getRegion()).orElseThrow(
-            () -> new NotFoundException("Region " + listingCriteria.getRegion() + " not found")
+                () -> new NotFoundException("Region " + listingCriteria.getRegion() + " not found")
         );
         Geometry regionPolygon = region.getGeometry();
         Envelope envelope = regionPolygon.getEnvelopeInternal();
         List<ListingWithScore> candidates = listingRepository.searchListings(
-            envelope.getMinX(), envelope.getMinY(), envelope.getMaxX(), envelope.getMaxY(),
-            listingCriteria.getMinPrice() != null ? listingCriteria.getMinPrice() : 0.0,
-            listingCriteria.getMaxPrice() != null ? listingCriteria.getMaxPrice() : Double.MAX_VALUE,
-            listingCriteria.getMinArea() != null ? listingCriteria.getMinArea() : 0.0,
-            filter.getTransport() != null ? filter.getTransport().getMaxDistanceToStation() : 1000.0,
-            weightedAmenities,
-            weightedPois
+                envelope.getMinX(), envelope.getMinY(), envelope.getMaxX(), envelope.getMaxY(),
+                listingCriteria.getMinPrice() != null ? listingCriteria.getMinPrice() : 0.0,
+                listingCriteria.getMaxPrice() != null ? listingCriteria.getMaxPrice() : Double.MAX_VALUE,
+                listingCriteria.getMinArea() != null ? listingCriteria.getMinArea() : 0.0,
+                listingCriteria.getMaxArea() != null ? listingCriteria.getMaxArea() : Double.MAX_VALUE,
+                filter.getTransport() != null ? filter.getTransport().getMaxDistanceToStation() : 1000.0,
+                weightedAmenities,
+                weightedPois
         );
 
         List<RealEstateWithScoreDto> realEstateWithScoreDtos = candidates.stream()
-            .peek(candidate -> {
-                ListingEntity l = candidate.getListing();
-                if (candidate.getAddress() != null) {
-                    log.info("Address={}", candidate.getAddress());
-                    l.setAddress(candidate.getAddress());
-                }
-            })
-            .filter(candidate -> {
-                ListingEntity listing = candidate.getListing();
-                var neoPoint = listing.getAddress().getLocation();
-                var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
-                return regionPolygon.contains(jtsPoint);
-            })
-            .limit(50)
-            .map(result -> new RealEstateWithScoreDto(toDto(result.getListing()), result.getScore()))
-            .toList();
+                .peek(candidate -> {
+                    ListingEntity l = candidate.getListing();
+                    if (candidate.getAddress() != null) {
+                        log.info("Address={}", candidate.getAddress());
+                        l.setAddress(candidate.getAddress());
+                    }
+                })
+                .filter(candidate -> {
+                    ListingEntity listing = candidate.getListing();
+                    var neoPoint = listing.getAddress().getLocation();
+                    var jtsPoint = geometryFactory.createPoint(new Coordinate(neoPoint.getLongitude(), neoPoint.getLatitude()));
+                    return regionPolygon.contains(jtsPoint);
+                })
+                .limit(50)
+                .map(result -> new RealEstateWithScoreDto(toDto(result.getListing()), result.getScore()))
+                .toList();
         log.info("Score={}", realEstateWithScoreDtos.getFirst().getScore());
         double minScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).min().orElse(0.0);
         double maxScore = realEstateWithScoreDtos.stream().mapToDouble(RealEstateWithScoreDto::getScore).max().orElse(0.0);
@@ -159,8 +153,8 @@ public class RealEstateServiceImpl implements RealEstateService {
             PriorityItemDto item = amenitiesPriority.get(i);
             if (item.getCategoryValue() != null) {
                 weightedAmenities.add(Map.of(
-                    "name", item.getCategoryValue(),
-                    "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0 //TODO: Could also use calculateWeight here
+                        "name", item.getCategoryValue(),
+                        "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0 //TODO: Could also use calculateWeight here
                 ));
             }
         }
@@ -176,9 +170,9 @@ public class RealEstateServiceImpl implements RealEstateService {
             PriorityItemDto item = poisPriority.get(i);
             if (item.getLat() != null && item.getLng() != null) {
                 weightedPois.add(Map.of(
-                    "lat", item.getLat(),
-                    "lng", item.getLng(),
-                    "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0
+                        "lat", item.getLat(),
+                        "lng", item.getLng(),
+                        "weight", item.getBonusScoreFactor() != null ? item.getBonusScoreFactor() : 1.0
                 ));
             }
         }
@@ -194,36 +188,36 @@ public class RealEstateServiceImpl implements RealEstateService {
         AddressEntity address = listing.getAddress();
         Double totalArea = listing.getTotalArea() != null ? listing.getTotalArea() : listing.getLivingArea();
         RealEstateDto dto = RealEstateDto.builder()
-            .id(listing.getId())
-            .price(listing.getPrice())
-            .title(listing.getTitle())
-            .pricePerM2(listing.getPricePerM2() != null ? listing.getPricePerM2() : listing.getPrice() / totalArea)
-            .bathroomCount(listing.getBathroomCount())
-            .livingArea(listing.getLivingArea())
-            .totalArea(totalArea)
-            .roomCount(listing.getRoomCount())
-            .externalUrl(listing.getExternalUrl())
-            .timestampFound(listing.getTimestampFound())
-            .source(listing.getSource())
-            .build();
+                .id(listing.getId())
+                .price(listing.getPrice())
+                .title(listing.getTitle())
+                .pricePerM2(listing.getPricePerM2() != null ? listing.getPricePerM2() : listing.getPrice() / totalArea)
+                .bathroomCount(listing.getBathroomCount())
+                .livingArea(listing.getLivingArea())
+                .totalArea(totalArea)
+                .roomCount(listing.getRoomCount())
+                .externalUrl(listing.getExternalUrl())
+                .timestampFound(listing.getTimestampFound())
+                .source(listing.getSource())
+                .build();
         if (address != null) {
             Double minDistance = null;
             if (address.getNearbyStations() != null && !address.getNearbyStations().isEmpty()) {
                 minDistance = address.getNearbyStations().stream()
-                    .mapToDouble(at.ac.tuwien.mogda.willgraph.entity.TransportConnection::getDistanceInMeters)
-                    .min()
-                    .orElse(Double.MAX_VALUE);
+                        .mapToDouble(at.ac.tuwien.mogda.willgraph.entity.TransportConnection::getDistanceInMeters)
+                        .min()
+                        .orElse(Double.MAX_VALUE);
             }
             dto.setAddress(AddressDto.builder()
-                .osmId(address.getOsmId())
-                .city(address.getCity())
-                .countryCode(address.getCountryCode())
-                .houseNumber(address.getHouseNumber())
-                .street(address.getStreet())
-                .fullAddressString(address.getFullAddressString())
-                .location(address.getLocation())
-                .distanceToNearestStation(minDistance)
-                .build());
+                    .osmId(address.getOsmId())
+                    .city(address.getCity())
+                    .countryCode(address.getCountryCode())
+                    .houseNumber(address.getHouseNumber())
+                    .street(address.getStreet())
+                    .fullAddressString(address.getFullAddressString())
+                    .location(address.getLocation())
+                    .distanceToNearestStation(minDistance)
+                    .build());
         }
         return dto;
     }
@@ -232,19 +226,19 @@ public class RealEstateServiceImpl implements RealEstateService {
         Double minDistance = null;
         if (entity.getNearbyStations() != null && !entity.getNearbyStations().isEmpty()) {
             minDistance = entity.getNearbyStations().stream()
-                .mapToDouble(at.ac.tuwien.mogda.willgraph.entity.TransportConnection::getDistanceInMeters)
-                .min()
-                .orElse(Double.MAX_VALUE);
+                    .mapToDouble(at.ac.tuwien.mogda.willgraph.entity.TransportConnection::getDistanceInMeters)
+                    .min()
+                    .orElse(Double.MAX_VALUE);
         }
         return AddressDto.builder()
-            .osmId(entity.getOsmId())
-            .city(entity.getCity())
-            .countryCode(entity.getCountryCode())
-            .houseNumber(entity.getHouseNumber())
-            .street(entity.getStreet())
-            .fullAddressString(entity.getFullAddressString())
-            .location(entity.getLocation())
-            .distanceToNearestStation(minDistance)
-            .build();
+                .osmId(entity.getOsmId())
+                .city(entity.getCity())
+                .countryCode(entity.getCountryCode())
+                .houseNumber(entity.getHouseNumber())
+                .street(entity.getStreet())
+                .fullAddressString(entity.getFullAddressString())
+                .location(entity.getLocation())
+                .distanceToNearestStation(minDistance)
+                .build();
     }
 }

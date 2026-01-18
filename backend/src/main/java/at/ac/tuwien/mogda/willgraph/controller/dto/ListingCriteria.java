@@ -8,4 +8,5 @@ public class ListingCriteria {
     private Double minPrice;
     private Double maxPrice;
     private Double minArea;
+    private Double maxArea;
 }

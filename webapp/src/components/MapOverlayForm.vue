@@ -193,11 +193,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import {computed, ref} from "vue";
 import regionService from "src/service/regionService";
-import type { Point } from "src/types/Point";
-import type { ListingSearchFilterDto } from "src/types/dto";
-import { useGeoStore } from "stores/geoStore";
+import type {Point} from "src/types/Point";
+import type {ListingSearchFilterDto} from "src/types/dto";
+import {useGeoStore} from "stores/geoStore";
 
 const geoStore = useGeoStore();
 
@@ -378,6 +378,7 @@ const handleSearch = async () => {
 	// Build base listing criteria (region will be filled per-region below)
 	const baseListing = {
 		minArea: squareMetersMin.value ?? null,
+    maxArea: squareMetersMax.value ?? null,
 		maxPrice: priceMax.value ?? null,
 		minPrice: priceMin.value ?? null,
 		region: null,
