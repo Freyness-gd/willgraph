@@ -446,8 +446,17 @@ export const useGeoStore = defineStore("geoStore", {
 					`Fetching amenities around estate at [${estateLat}, ${estateLon}] with radius ${this.estateAmenitiesRadius}m`
 				);
 				const amenities = await poiService.findPoIsNearby(estateLat, estateLon, this.estateAmenitiesRadius);
-				this.estateAmenities = amenities;
-				console.log("Fetched estate amenities:", amenities.length);
+				// Filter to keep only distinct amenity names
+				const seenNames = new Set<string>();
+				const distinctAmenities = amenities.filter((amenity) => {
+					if (seenNames.has(amenity.name)) {
+						return false;
+					}
+					seenNames.add(amenity.name);
+					return true;
+				});
+				this.estateAmenities = distinctAmenities;
+				console.log("Fetched estate amenities:", amenities.length, "distinct:", distinctAmenities.length);
 			} catch (error) {
 				console.error("Error fetching estate amenities:", error);
 				this.estateAmenities = [];

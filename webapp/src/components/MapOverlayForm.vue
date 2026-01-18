@@ -169,17 +169,25 @@
 
 		<!-- Search Button -->
 		<div class="form-row button-row">
-			<q-btn class="search-btn" color="primary" icon="search" label="Search" @click="handleSearch" />
+			<q-btn
+				:color="isSearching ? 'grey' : 'primary'"
+				:disable="isSearching"
+				:label="isSearching ? 'Searching...' : 'Search'"
+				:loading="isSearching"
+				class="search-btn"
+				icon="search"
+				@click="handleSearch"
+			/>
 		</div>
+	</div>
 
-		<!-- Score Legend - shows when there are results -->
-		<div v-if="hasResults" class="score-legend">
-			<div class="legend-title">Score Legend</div>
-			<div class="legend-gradient"></div>
-			<div class="legend-labels">
-				<span class="legend-label-left">0 - Matching, but unfitting</span>
-				<span class="legend-label-right">1 - Perfect fit</span>
-			</div>
+	<!-- Score Legend fixed at bottom when there are results - always visible -->
+	<div v-if="hasResults" class="score-legend-fixed">
+		<div class="legend-title">Score Legend</div>
+		<div class="legend-gradient"></div>
+		<div class="legend-labels">
+			<span class="legend-label-left">0 - Matching, but unfitting</span>
+			<span class="legend-label-right">1 - Perfect fit</span>
 		</div>
 	</div>
 </template>
@@ -261,17 +269,23 @@ const removeAmenityCategory = (index: number) => {
 // Move amenity up in the list
 const moveAmenityUp = (index: number) => {
 	if (index <= 0) return;
-	const temp = selectedAmenities.value[index];
-	selectedAmenities.value[index] = selectedAmenities.value[index - 1];
-	selectedAmenities.value[index - 1] = temp;
+	const current = selectedAmenities.value[index];
+	const previous = selectedAmenities.value[index - 1];
+	if (current && previous) {
+		selectedAmenities.value[index] = previous;
+		selectedAmenities.value[index - 1] = current;
+	}
 };
 
 // Move amenity down in the list
 const moveAmenityDown = (index: number) => {
 	if (index >= selectedAmenities.value.length - 1) return;
-	const temp = selectedAmenities.value[index];
-	selectedAmenities.value[index] = selectedAmenities.value[index + 1];
-	selectedAmenities.value[index + 1] = temp;
+	const current = selectedAmenities.value[index];
+	const next = selectedAmenities.value[index + 1];
+	if (current && next) {
+		selectedAmenities.value[index] = next;
+		selectedAmenities.value[index + 1] = current;
+	}
 };
 
 // Get icon for a category
@@ -287,6 +301,7 @@ const getCategoryLabel = (category: AmenityCategory): string => {
 // POI Management
 const addPoiMode = ref(false);
 const poiList = ref<Point[]>([]);
+const isSearching = ref(false);
 const MAX_POIS = 5;
 
 const POI_COLORS = ["#e91e63", "#9c27b0", "#3f51b5", "#009688", "#ff9800"];
@@ -334,22 +349,31 @@ const removePoi = (id: string) => {
 // Move POI up in the list
 const movePoiUp = (index: number) => {
 	if (index <= 0) return;
-	const temp = poiList.value[index];
-	poiList.value[index] = poiList.value[index - 1];
-	poiList.value[index - 1] = temp;
+	const current = poiList.value[index];
+	const previous = poiList.value[index - 1];
+	if (current && previous) {
+		poiList.value[index] = previous;
+		poiList.value[index - 1] = current;
+	}
 };
 
 // Move POI down in the list
 const movePoiDown = (index: number) => {
 	if (index >= poiList.value.length - 1) return;
-	const temp = poiList.value[index];
-	poiList.value[index] = poiList.value[index + 1];
-	poiList.value[index + 1] = temp;
+	const current = poiList.value[index];
+	const next = poiList.value[index + 1];
+	if (current && next) {
+		poiList.value[index] = next;
+		poiList.value[index + 1] = current;
+	}
 };
 
 const handleSearch = async () => {
 	// Close estate overview when starting a new search
 	geoStore.clearSelectedEstate();
+
+	// Set loading state
+	isSearching.value = true;
 
 	// Build base listing criteria (region will be filled per-region below)
 	const baseListing = {
@@ -408,6 +432,7 @@ const handleSearch = async () => {
 
 	if (regions.length === 0) {
 		console.log("No selected regions to search; cleared heat points.");
+		isSearching.value = false;
 		return;
 	}
 
@@ -442,6 +467,8 @@ const handleSearch = async () => {
 		}
 	} catch (err) {
 		console.error("Error during region search:", err);
+	} finally {
+		isSearching.value = false;
 	}
 };
 
@@ -661,15 +688,20 @@ defineExpose({ addPoi, poiList, addPoiMode, selectedAmenities });
 	min-width: 20px;
 }
 
-/* Score Legend Styles */
-.score-legend {
+/* Score Legend Styles - Fixed positioning to always be visible */
+.score-legend-fixed {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 1001;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 	padding: 12px;
-	background-color: rgba(255, 255, 255, 0.8);
+	background-color: rgba(255, 255, 255, 0.95);
 	border-radius: 6px;
-	margin-top: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	min-width: 200px;
 }
 
 .legend-title {
