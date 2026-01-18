@@ -2,8 +2,10 @@ package at.ac.tuwien.mogda.willgraph.controller;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.PoIDistanceDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.PointToPointDistanceDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.TransportPathDto;
 import at.ac.tuwien.mogda.willgraph.controller.dto.WalkingDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.PointOfInterestEntity;
+import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
 import at.ac.tuwien.mogda.willgraph.service.PoIService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -60,4 +62,19 @@ public class PoIController {
         @RequestParam("toLon") Double toLongitude) {
         return poiService.calculateDistanceBetweenPoints(fromLatitude, fromLongitude, toLatitude, toLongitude);
     }
+
+    @GetMapping("/transport-path")
+    public ResponseEntity<TransportPathDto> getTransportPath(
+        @RequestParam("fromLat") Double fromLat,
+        @RequestParam("fromLon") Double fromLon,
+        @RequestParam("toLat") Double toLat,
+        @RequestParam("toLon") Double toLon,
+        @RequestParam(value = "maxWalkDistance", required = false, defaultValue = "1000.0") double maxWalkDistance) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(poiService.calculateTransportPath(fromLat, fromLon, toLat, toLon, maxWalkDistance));
+        } catch (NotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
 }
