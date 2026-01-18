@@ -7,4 +7,5 @@ export interface ListingSearchFilterDto {
 	transport: TransportCriteria | null;
 	amenityPriorities: PriorityItemDto[] | null;
 	poiPriorities: PriorityItemDto[] | null;
+	bonusScoreRegion: number | null;
 }
