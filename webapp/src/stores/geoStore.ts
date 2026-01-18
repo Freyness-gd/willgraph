@@ -646,19 +646,6 @@ export const useGeoStore = defineStore("geoStore", {
 				.filter(Boolean)
 				.sort((a, b) => a.localeCompare(b));
 
-			// Load heat points
-			// try {
-			// 	const heatPointsResult = await fetch("../src/data/geo/test_points.json");
-			// 	if (heatPointsResult.ok) {
-			// 		this.heatPoints = await heatPointsResult.json();
-			// 		console.log("Heat points loaded:", this.heatPoints);
-			// 	} else {
-			// 		console.warn("Heat points JSON not found");
-			// 	}
-			// } catch (error) {
-			// 	console.error("Error loading heat points:", error);
-			// }
-
 			this.loading = false;
 			this.loaded = true;
 		},
