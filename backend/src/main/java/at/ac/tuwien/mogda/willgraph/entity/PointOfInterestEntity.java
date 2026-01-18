@@ -1,0 +1,39 @@
+package at.ac.tuwien.mogda.willgraph.entity;
+
+import lombok.Builder;
+import lombok.Data;
+import static org.springframework.data.neo4j.core.schema.Relationship.Direction.OUTGOING;
+import java.util.List;
+import org.springframework.data.geo.Point;
+import org.springframework.data.neo4j.core.schema.GeneratedValue;
+import org.springframework.data.neo4j.core.schema.Id;
+import org.springframework.data.neo4j.core.schema.Node;
+import org.springframework.data.neo4j.core.schema.Relationship;
+import org.springframework.data.neo4j.core.support.UUIDStringGenerator;
+import org.springframework.data.neo4j.types.GeographicPoint2d;
+
+@Node("PointOfInterest")
+@Data
+@Builder
+public class PointOfInterestEntity {
+  @Id
+  @GeneratedValue(generatorClass = UUIDStringGenerator.class)
+  private String id;
+  private String name;
+  private Integer score;
+  private GeographicPoint2d location; // (lat, lon)
+
+  // Support for custom user-created amenities
+  private String description;  // Optional description of the POI we could here make this complexer with all the tags of our amenities
+  private Long osmId;   // OSM ID if fetched from Overpass API
+
+
+  @Relationship(type = "HAS_ADDRESS", direction = OUTGOING)
+  private AddressEntity address;
+  @Relationship(type = "IS_TYPE", direction = OUTGOING)
+  private AmenityTypeEntity type;
+
+  @Relationship(type = "CLOSE_TO_STATION", direction = OUTGOING)
+  private List<TransportConnection> nearbyStations;
+
+}

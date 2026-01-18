@@ -35,13 +35,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-json'
-    implementation 'io.springfox:springfox-boot-starter:3.0.0'
     // Geo/spatial support
     implementation 'org.locationtech.jts:jts-core:1.20.0'
     implementation 'org.n52.jackson:jackson-datatype-jts:1.2.10'
 
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    //developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     // endregion
@@ -56,11 +55,23 @@ dependencies {
     // region JUNIT
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     // endregion
-    // region LOGBGING
+    // region LOGGING
     implementation 'org.springframework.boot:spring-boot-starter-logging'
     //endregion
 
     testImplementation 'io.projectreactor:reactor-test'
+
+    //java topology (jts)
+    implementation("org.locationtech.jts:jts-core:1.20.0")
+    //serialization for jackson (jts)
+    implementation("com.bedatadriven:jackson-datatype-jts:2.4")
+
+    //csv stuff
+    implementation("org.apache.commons:commons-csv:1.14.1")
+
+    // HTTP client for Overpass API calls
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     configurations.configureEach {
         exclude group: 'org.apache.logging.log4j', module: 'log4j-slf4j-impl'

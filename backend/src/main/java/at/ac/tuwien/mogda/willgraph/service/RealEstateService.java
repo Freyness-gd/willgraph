@@ -1,0 +1,21 @@
+package at.ac.tuwien.mogda.willgraph.service;
+
+import at.ac.tuwien.mogda.willgraph.controller.dto.ListingSearchFilterDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.RealEstateWithScoreDto;
+import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
+import at.ac.tuwien.mogda.willgraph.exception.NotFoundException;
+
+import java.util.List;
+
+public interface RealEstateService {
+    RealEstateDto findById(String id) throws NotFoundException;
+
+    List<RealEstateDto> findRealEstatesInRegion(String region, String iso) throws NotFoundException;
+
+    List<RealEstateDto> findAll();
+
+    List<StationDistanceDto> findStationsNearby(String id) throws NotFoundException;
+
+    List<RealEstateWithScoreDto> searchWithFilters(ListingSearchFilterDto request) throws NotFoundException;
+}
