@@ -4,11 +4,10 @@ import at.ac.tuwien.mogda.willgraph.repository.AddressRepository;
 import at.ac.tuwien.mogda.willgraph.repository.TransportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import java.util.List;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @Slf4j
@@ -37,7 +36,7 @@ public class ProximityLinkingService {
         }
     }
 
-    private void generateWalkEdgesSafely() {
+  public void generateWalkEdgesSafely() {
         List<Long> allIds = transportRepository.getAllTransportIds();
         int batchSize = 500;
         for (int i = 0; i < allIds.size(); i += batchSize) {
@@ -54,7 +53,7 @@ public class ProximityLinkingService {
         }
     }
 
-    private boolean isImportComplete() {
+  public boolean isImportComplete() {
         return neo4jClient.query("MATCH (s:SystemState {type: 'transport_import', status: 'COMPLETED'}) RETURN count(s) > 0")
             .fetchAs(Boolean.class)
             .one()
