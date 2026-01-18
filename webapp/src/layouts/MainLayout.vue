@@ -338,7 +338,9 @@
                 <div class="route-summary">
                   <span class="text-weight-bold">{{ poi.transportPath.numberOfStops }} Stops</span>
                   <span class="text-caption text-grey">
-                (Walk start: {{ Math.round(poi.transportPath.walkToStationMeters) }}m)
+                (Walk start: {{
+                      Math.round(poi.transportPath.walkToStationMeters)
+                    }}m / end: {{ Math.round(poi.transportPath?.walkFromStationMeters) }}m)
                 </span>
                 </div>
                 <q-timeline color="secondary" layout="dense" class="compact-timeline">
@@ -352,11 +354,7 @@
                   >
                     <div v-if="idx > 0 && station.travelTimeInMinutes" class="text-caption text-grey">
                       <q-icon name="schedule" size="xs"/>
-                      {{ Math.ceil(station.travelTimeInMinutes) }} min
-                      {{ station.segmentType === 'WALK' ? 'transfer walk' : 'ride' }}
-                      <span v-if="station.segmentType === 'WALK'" class="text-orange text-weight-bold">
-                       (Change Lines)
-                      </span>
+                      {{ Math.ceil(station.travelTimeInMinutes) }} min ride
                     </div>
                   </q-timeline-entry>
                 </q-timeline>
@@ -578,13 +576,13 @@ const moveMunicipalityDown = (name: string) => {
 };
 
 const getSegmentIcon = (station: StationDistanceDto) => {
-  if (station.segmentType === 'WALK') return 'directions_walk';
+  //if (station.segmentType === 'WALK') return 'directions_walk';
   if (station.segmentType === 'START') return 'place';
   return station.type === 'Subway' ? 'subway' : 'directions_bus';
 };
 
 const getSegmentColor = (station: StationDistanceDto) => {
-  if (station.segmentType === 'WALK') return 'orange';
+  //if (station.segmentType === 'WALK') return 'orange';
   if (station.segmentType === 'START') return 'grey';
   return 'secondary';
 };
