@@ -1,9 +1,35 @@
 import axios from "axios";
 import type { RealEstateDto } from "src/types/RealEstate";
 import type { PointToPointDistanceDto } from "src/types/Point";
-import type { ListingSearchFilterDto, RealEstateWithScoreDto } from "src/types/dto";
+import type { ListingSearchFilterDto, RealEstateWithScoreDto, RegionDto } from "src/types/dto";
 
 const regionService = {
+	/**
+	 * Search regions by query string.
+	 * Makes GET request to http://localhost:8080/api/regions?q={query}&limit={limit}
+	 * @param q Search query (optional)
+	 * @param limit Maximum number of results (default 10)
+	 * @returns Array of RegionDto objects
+	 */
+	async searchRegions(q?: string, limit: number = 10): Promise<RegionDto[]> {
+		console.log("searchRegions called with query:", q, "limit:", limit);
+
+		try {
+			const response = await axios.get<RegionDto[]>("http://localhost:8080/api/regions", {
+				params: {
+					q,
+					limit,
+				},
+			});
+
+			console.log("Regions API Response:", response.data);
+			return response.data;
+		} catch (error) {
+			console.error("Error searching regions:", error);
+			return [];
+		}
+	},
+
 	/**
 	 * Fetches region points from backend API and returns an array of [lat, lon] pairs.
 	 * Makes GET request to http://localhost:8080/api/estate?region={regionName}
@@ -60,7 +86,7 @@ const regionService = {
 
 	/**
 	 * Calculates distance between two points.
-	 * Makes GET request to http://localhost:8080/pois/distance
+	 * Makes GET request to /api/poi/distance
 	 * @param fromLat Starting latitude
 	 * @param fromLon Starting longitude
 	 * @param toLat Destination latitude

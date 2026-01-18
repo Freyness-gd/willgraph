@@ -18,9 +18,9 @@ services:
     volumes:
       - neo4j_data:/data
   data-importer:
-    build: ../scraping/transport
+    build: ./scraping/transport
     env_file:
-      - ../scraping/transport/.env #If you want you may change this at anytime
+      - ./scraping/transport/.env #If you want you may change this at anytime
     environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
@@ -29,10 +29,10 @@ services:
       neo4j:
         condition: service_healthy
     volumes:
-      - ../scraping/transport/gtfs_data:/app/gtfs_data
+      - ./scraping/transport/gtfs_data:/app/gtfs_data
 
   scraping:
-    build: ../scraping
+    build: ./scraping
     ports:
       - "6080:6080"   # noVNC web interface
       - "5900:5900"   # VNC port
@@ -40,10 +40,10 @@ services:
       neo4j:
         condition: service_healthy
     volumes:
-      - ../scraping/scrapingOutput:/app/scrapingOutput
+      - ./scraping/scrapingOutput:/app/scrapingOutput
 
   backend:
-    build: .
+    build: ./backend
     ports:
       - "8080:8080"
     environment:
@@ -56,5 +56,21 @@ services:
         condition: service_healthy
       data-importer:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  webapp:
+    build: ./webapp
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
 volumes:
   neo4j_data:
+
