@@ -39,6 +39,8 @@ services:
     depends_on:
       neo4j:
         condition: service_healthy
+      backend:
+        condition: service_healthy
     volumes:
       - ./scraping/scrapingOutput:/app/scrapingOutput
 
