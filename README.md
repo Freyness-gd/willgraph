@@ -64,7 +64,7 @@ Once all containers are running, open your browser:
 | **Frontend** | [http://localhost](http://localhost) |
 | **Backend API** | [http://localhost:8080/api](http://localhost:8080/api) |
 | **Neo4j Browser** | [http://localhost:7474](http://localhost:7474) |
-| **Scraping VNC** | [http://localhost:6080](http://localhost:6080) |
+| **Scraping VNC** | [http://localhost:6080/vnc.html](http://localhost:6080/vnc.html) |
 
 > **Note:** The frontend may take a few minutes to become available while the backend initializes and imports data.
 
