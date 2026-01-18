@@ -2,13 +2,12 @@ package at.ac.tuwien.mogda.willgraph.repository;
 
 import at.ac.tuwien.mogda.willgraph.controller.dto.StationDistanceDto;
 import at.ac.tuwien.mogda.willgraph.entity.AddressEntity;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface AddressRepository extends Neo4jRepository<AddressEntity, String> {
@@ -48,4 +47,7 @@ public interface AddressRepository extends Neo4jRepository<AddressEntity, String
             "       (dist / 80.0) AS walkingDurationInMinutes " +
             "ORDER BY dist ASC LIMIT 10")
     List<StationDistanceDto> findStationsByLocation(double lat, double lon, double radiusMeters);
+
+    @Query("MATCH (a:Address) WHERE NOT (a)-[:IN_REGION]->() RETURN a")
+    List<AddressEntity> findAllByRegionIsNull();
 }

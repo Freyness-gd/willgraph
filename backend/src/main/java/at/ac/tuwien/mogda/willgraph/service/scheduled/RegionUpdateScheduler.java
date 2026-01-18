@@ -43,8 +43,8 @@ public class RegionUpdateScheduler {
 
     log.info("Loaded {} regions for spatial mapping.", regions.size());
 
-    // Find all addresses without region assignment or optionally all addresses
-    List<AddressEntity> addresses = addressRepository.findAll();
+    // Find only addresses without region assignment to reduce memory usage
+    List<AddressEntity> addresses = addressRepository.findAllByRegionIsNull();
     int updated = 0;
     int skipped = 0;
     int failed = 0;
@@ -63,27 +63,17 @@ public class RegionUpdateScheduler {
             regions
         );
 
-        RegionEntity currentRegion = address.getRegion();
-
-        // Update if no region or if current region doesn't contain the point
-        if (currentRegion == null || !currentRegion.equals(correctRegion)) {
-          if (correctRegion != null) {
-            address.setRegion(correctRegion);
-            addressRepository.save(address);
-            updated++;
-            log.debug("Updated address {} to region {}",
-                address.getFullAddressString(), correctRegion.getName());
-          } else {
-            log.warn("Address at {},{} is not inside any known Region polygon.",
-                location.getLatitude(), location.getLongitude());
-            // Optionally clear incorrect region assignment
-            if (currentRegion != null) {
-              address.setRegion(null);
-              addressRepository.save(address);
-              updated++;
-            }
-            failed++;
-          }
+        // All addresses at this point have no region set (fetched with findAllByRegionIsNull)
+        if (correctRegion != null) {
+          address.setRegion(correctRegion);
+          addressRepository.save(address);
+          updated++;
+          log.debug("Updated address {} to region {}",
+              address.getFullAddressString(), correctRegion.getName());
+        } else {
+          log.warn("Address at {},{} is not inside any known Region polygon.",
+              location.getLatitude(), location.getLongitude());
+          failed++;
         }
       } catch (Exception e) {
         log.error("Failed to update region for address {}: {}",
