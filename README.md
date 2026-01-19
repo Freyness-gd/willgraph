@@ -30,7 +30,7 @@ A graph-based real estate search platform for Austria that combines property lis
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/willgraph.git
+git clone https://github.com/Freyness-gd/willgraph.git
 cd willgraph
 ```
 
